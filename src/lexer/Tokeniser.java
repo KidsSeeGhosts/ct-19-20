@@ -220,6 +220,9 @@ public class Tokeniser {
         			}
         		}
         		if (Character.isDigit(c)) {
+        			if ((peekChar=='\'')) {//small update so '1' or '2' is a char literal!
+        				return new Token(TokenClass.CHAR_LITERAL, line, column);//
+        			}//
         			while (c!='\'') {//move the scanner until it gets to the second single quote
             			c=scanner.next();
             			if (c == '\''){
