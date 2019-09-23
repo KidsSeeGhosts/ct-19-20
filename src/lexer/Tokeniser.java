@@ -196,6 +196,13 @@ public class Tokeniser {
     			}
         		while (c!='"') {
         			c=scanner.next();
+        			if (c=='\\') {
+        				char peekChar = scanner.peek();
+        				if (peekChar=='"'){
+        					c=scanner.next();
+        					return new Token(TokenClass.INVALID, line, column);
+        				}
+        			}
         			if (c == '"'){
         				return new Token(TokenClass.STRING_LITERAL, line, column);
         			}
@@ -209,26 +216,44 @@ public class Tokeniser {
         if (c == '\''){ //if we have single quote
         		c=scanner.next();
         		char peekChar = scanner.peek();
+
         		if (!Character.isDigit(c) && peekChar=='\'') {//if c is a letter and then second single quote
+        			c=scanner.next();
         			return new Token(TokenClass.CHAR_LITERAL, line, column);
         		}
-        		if (c=='\\') { //if c is a single slash then character then single quote
+        		if (c=='\\') { //if c is a single slash then character then single quote (escape character)
         			c=scanner.next();
         			peekChar = scanner.peek();
         			if ((peekChar=='\'')) {
+        				c=scanner.next();
         				return new Token(TokenClass.CHAR_LITERAL, line, column);
         			}
         		}
-        		if (Character.isDigit(c)) {
-        			if ((peekChar=='\'')) {//small update so '1' or '2' is a char literal!
-        				return new Token(TokenClass.CHAR_LITERAL, line, column);//
-        			}//
-        			while (c!='\'') {//move the scanner until it gets to the second single quote
-            			c=scanner.next();
-            			if (c == '\''){
-            				return new Token(TokenClass.INT_LITERAL, line, column);
-            			}
-            		}
+        		if (!Character.isDigit(c) && peekChar!='\'') {//checking for multiple characters in single quotes
+        			while (c != '\'') {
+        				c=scanner.next();
+        			}
+        			return new Token(TokenClass.INVALID, line, column);
+        		}
+        		if (Character.isDigit(c) && peekChar=='\'') {//checking for single integer in single quotes
+        			c=scanner.next();
+        			return new Token(TokenClass.CHAR_LITERAL, line, column);//
+        		}
+        		if (Character.isDigit(c) && Character.isDigit(peekChar)) {//checking for int literal
+        			while (Character.isDigit(c) && peekChar!='\'') {
+        				c=scanner.next();
+        				peekChar=scanner.peek();
+        			}
+        			if (Character.isDigit(c) && peekChar=='\'') {
+        				c=scanner.next();
+        				return new Token(TokenClass.INT_LITERAL, line, column);
+        			}
+        			else {
+        				while(c!='\'') {
+        					c=scanner.next();
+        				}
+        				return new Token(TokenClass.INVALID, line, column);
+        			}
         		}
         		return new Token(TokenClass.INVALID, line, column);
         }
@@ -250,7 +275,7 @@ public class Tokeniser {
         					scanner.next();
         					c = scanner.peek();
         			}
-        			System.out.println(sb.toString());
+        			//System.out.println(sb.toString());
         			//types
         			if ("void".equals(sb.toString())) {
         				return new Token(TokenClass.VOID, line, column);
