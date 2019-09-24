@@ -130,6 +130,7 @@ public class Tokeniser {
     			if (scanner.peek() == '&'){
     				return new Token(TokenClass.AND, line, column);
     			}
+    			error(c, line, column);
     			return new Token(TokenClass.INVALID, line, column);
 		}
         
@@ -137,6 +138,7 @@ public class Tokeniser {
     			if (scanner.peek() == '|'){
     				return new Token(TokenClass.OR, line, column);
     			}
+    			error(c, line, column);
     			return new Token(TokenClass.INVALID, line, column);
 		}
         
@@ -152,6 +154,7 @@ public class Tokeniser {
 	    		if (scanner.peek() == '='){
 	    			return new Token(TokenClass.NE, line, column);
 	    		}
+	    		error(c, line, column);
 	    		return new Token(TokenClass.INVALID, line, column);
 		}
         //LT, // '<'
@@ -185,6 +188,7 @@ public class Tokeniser {
         			counter++;
         			c=scanner.next();
         		}
+        		error(c, line, column);
         		return new Token(TokenClass.INVALID, line, column);
         }
         
@@ -198,8 +202,9 @@ public class Tokeniser {
         			c=scanner.next();
         			if (c=='\\') {
         				char peekChar = scanner.peek();
-        				if (peekChar=='"'){
+        				if (peekChar=='"'){//if you have\ then double quote return error as invalid string
         					c=scanner.next();
+        					error(c, line, column);
         					return new Token(TokenClass.INVALID, line, column);
         				}
         			}
@@ -207,6 +212,7 @@ public class Tokeniser {
         				return new Token(TokenClass.STRING_LITERAL, line, column);
         			}
         		}
+        		error(c, line, column);
         		return new Token(TokenClass.INVALID, line, column);
         }
         //NOT TESTED
@@ -233,6 +239,7 @@ public class Tokeniser {
         			while (c != '\'') {
         				c=scanner.next();
         			}
+        			error(c, line, column);//this one line shoukd solve multi characters in single quotes test problem
         			return new Token(TokenClass.INVALID, line, column);
         		}
         		if (Character.isDigit(c) && peekChar=='\'') {//checking for single integer in single quotes
@@ -249,12 +256,14 @@ public class Tokeniser {
         				return new Token(TokenClass.INT_LITERAL, line, column);
         			}
         			else {
-        				while(c!='\'') {
+        				while(c!='\'') {//if we have a few numbers then a character it's no longer an int literal and is invalid
         					c=scanner.next();
         				}
+        				error(c, line, column);
         				return new Token(TokenClass.INVALID, line, column);
         			}
         		}
+        		error(c, line, column);
         		return new Token(TokenClass.INVALID, line, column);
         }
         
