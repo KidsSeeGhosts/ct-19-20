@@ -74,19 +74,18 @@ public class Tokeniser {
         
         //comments and division
         if (c == '/') {
-    		char peekChar = scanner.peek();
-    			if (peekChar!='/') {
-                return new Token(TokenClass.DIV, line, column);
-    			}
-	    		if (c == '/'){
-	    			c=scanner.next();
+        		char peekChar = scanner.peek();
+        		if (peekChar!='/') {
+                    return new Token(TokenClass.DIV, line, column);
+        		}
+        		if (c == '/'){
+        			c=scanner.next();
 	    			while (c!='\n') {//keep scanning until you get to newline
 	    				c=scanner.next();
 	    			}
 	    			return next();
 	    		}
         }
-
         
         if (c == '%')
             return new Token(TokenClass.REM, line, column);
@@ -132,6 +131,7 @@ public class Tokeniser {
     				c=scanner.next();
     				return new Token(TokenClass.AND, line, column);
     			}
+    			return new Token(TokenClass.INVALID, line, column);
 		}
         
         if (c == '|') {
@@ -139,22 +139,24 @@ public class Tokeniser {
     				c=scanner.next();
     				return new Token(TokenClass.OR, line, column);
     			}
+    			return new Token(TokenClass.INVALID, line, column);
 		}
         
         //ASSIGN and EQ
         if (c == '=') {
         		if (scanner.peek() == '='){
+        			c=scanner.next();
         			return new Token(TokenClass.EQ, line, column);
         		}
-        		else {
-        			return new Token(TokenClass.ASSIGN, line, column);
-        		}
+            return new Token(TokenClass.ASSIGN, line, column);
     		}
         //NE, // "!="
         if (c == '!') {
 	    		if (scanner.peek() == '='){
+	    			c=scanner.next();
 	    			return new Token(TokenClass.NE, line, column);
 	    		}
+	    		return new Token(TokenClass.INVALID, line, column);
 		}
         //LT, // '<'
 //        GT, // '>'
@@ -162,119 +164,140 @@ public class Tokeniser {
 //        GE, // ">="
         if (c == '<') {
 	    		if (scanner.peek() == '='){
+	    			c=scanner.next();
 	    			return new Token(TokenClass.LE, line, column);
 	    		}
 	    		return new Token(TokenClass.LT, line, column);
 		}
         if (c == '>') {
 	    		if (scanner.peek() == '='){
+	    			c=scanner.next();
 	    			return new Token(TokenClass.GE, line, column);
 	    		}
 	    		return new Token(TokenClass.GT, line, column);
 		}
 
+        //Dealing with int literal
+        if (Character.isDigit(c)) {//checking for int literal
+            char peekChar=scanner.peek();
+            while (Character.isDigit(peekChar)) {
+                c=scanner.next();
+                peekChar=scanner.peek();
+            }
+            return new Token(TokenClass.INT_LITERAL, line, column);
+        }
+        
+        
         
         
         //INCLUDE, // "#include"
         if (c == '#' && scanner.peek()=='i') {
-        		int 	counter=0;
-        		String word = "include ";
-        		c=scanner.next();
-        		while (word.charAt(counter)==c) {
-        			if (c==' ' && counter== 7) {
-        				return new Token(TokenClass.INCLUDE, line, column);
-        			}
-        			counter++;
-        			c=scanner.next();
-        		}
+            int     counter=0;
+            String word = "include";
+            c=scanner.next();
+            while (word.charAt(counter)==c) {
+                if (c=='e' && counter== 6) {
+                    return new Token(TokenClass.INCLUDE, line, column);
+                }
+                counter++;
+                c=scanner.next();
+            }
         }
         
         //String literal type
         if (c == '"') {
-    			c=scanner.next();
-			if (c == '"'){
-				return new Token(TokenClass.STRING_LITERAL, line, column);
-			}
-			if (c=='\\') {//if start of escape character
-				c=scanner.next();
-				if (c=='"') {
-		    			error(c, line, column);
-		    			return new Token(TokenClass.INVALID, line, column);
-				}
-			}
-    			while (c!='"') {
-    				c=scanner.next();
-    				if (c == '"'){
-    				return new Token(TokenClass.STRING_LITERAL, line, column);
-    				}
-    			}
-    		error(c, line, column);
-    		return new Token(TokenClass.INVALID, line, column);
+            char peekChar=scanner.peek();
+            if (peekChar == '"'){
+            		c=scanner.next();
+                return new Token(TokenClass.STRING_LITERAL, line, column);
+            }
+            while (peekChar!='"') {
+                c=scanner.next();
+                if (c=='\\') {//if start of escape character THE ONLY THING I'VE SAID HERE IS YOU CAN'T END IN A \ IN A STRING
+                    c=scanner.next();
+                    peekChar=scanner.peek();
+                    if (c =='"' && peekChar!= '"') {//if we have "hello\" this is error
+                        error(c, line, column);
+                        return new Token(TokenClass.INVALID, line, column);
+                    }
+                    if (peekChar=='"') {//but if we have "hello\"" this is fine
+                    	    c=scanner.next();
+                        return new Token(TokenClass.STRING_LITERAL, line, column);
+                    }
+                }
+                if (c == '"'){
+                    return new Token(TokenClass.STRING_LITERAL, line, column);
+                }
+            }
+            error(c, line, column);
+            return new Token(TokenClass.INVALID, line, column);
         }
-
-        		//error(c, line, column);
-        		//return new Token(TokenClass.INVALID, line, column);
-        
         //NOT TESTED
         //char literal and int literal
         //CHAR_LITERAL,   // \'('a'|...|'z'|'A'|...|'Z'|'\t'|'\b'|'\n'|'\r'|'\f'|'\''|'\"'|'\\'|'\0'|'.'|','|'_'|...)\'  a character starts and end with a single quote '
         //INT_LITERAL,    // ('0'|...|'9')+
+        
         if (c == '\''){ //if we have single quote
-        		c=scanner.next();
-        		char peekChar = scanner.peek();
-        		if (c=='\'') {//if you have '' this is invalid
-        			error(c, line, column);
-            		return new Token(TokenClass.INVALID, line, column);
-        		}
-        		//above works
-        		if (c=='\\') { //if c is a \ then dealing with escape character
-        			c=scanner.next();
-        			peekChar = scanner.peek();
-        			if ((c=='t' || c=='b' || c=='n' 
-        					|| c=='r' || c=='f' || c=='\'' 
-        					|| c=='"' || c=='\\' || c=='0') && peekChar=='\'') {
-        				c = scanner.next();
-        				return new Token(TokenClass.CHAR_LITERAL, line, column);
-        			}
-        			else {
-        				c=scanner.next();
-        				error(c, line, column);
-                		return new Token(TokenClass.INVALID, line, column);
-        			}
-        		}
-        		if (!Character.isDigit(c) && peekChar=='\'') {//if c is a letter and then second single quote
-        			c=scanner.next();
-        			return new Token(TokenClass.CHAR_LITERAL, line, column);
-        		}
-
-        		if (!Character.isDigit(c) && peekChar!='\'') {//checking for multiple characters in single quotes
-        			while (c != '\'') {
-        				c=scanner.next();
-        			}
-        			error(c, line, column);//this one line should solve multi characters in single quotes test problem
-        			return new Token(TokenClass.INVALID, line, column);
-        		}
-        		if (Character.isDigit(c) && peekChar=='\'') {//checking for single integer in single quotes
-        			c=scanner.next();
-        			return new Token(TokenClass.CHAR_LITERAL, line, column);//
-        		}
-        		if (Character.isDigit(c) && Character.isDigit(peekChar)) {//checking for int literal
-        			while (Character.isDigit(c) && peekChar!='\'') {
-        				c=scanner.next();
-        				peekChar=scanner.peek();
-        			}
-        			if (Character.isDigit(c) && peekChar=='\'') {
-        				c=scanner.next();
-        				return new Token(TokenClass.INT_LITERAL, line, column);
-        			}
-        			else {
-        				while(c!='\'') {//if we have a few numbers then a character it's no longer an int literal and is invalid
-        					c=scanner.next();
-        				}
-        				error(c, line, column);
-        				return new Token(TokenClass.INVALID, line, column);
-        			}
-        		}
+            c=scanner.next();
+            char peekChar = scanner.peek();
+            if (c=='\'') {//if you have '' this is invalid
+                error(c, line, column);
+                return new Token(TokenClass.INVALID, line, column);
+            }
+            //above works
+            if (c=='\\') { //if c is a \ then dealing with escape character
+                c=scanner.next();
+                peekChar = scanner.peek();
+                if ((c=='t' || c=='b' || c=='n'
+                     || c=='r' || c=='f' || c=='\''
+                     || c=='"' || c=='\\' || c=='0') && peekChar=='\'') {//checks for a valid escape character else it's invalid
+                    c = scanner.next();
+                    return new Token(TokenClass.CHAR_LITERAL, line, column);
+                }
+                if (c=='\'' && peekChar!='\'') {//means you can't have '\' as a char literal
+                		error(c, line, column);
+                    return new Token(TokenClass.INVALID, line, column);
+                }
+                else {
+                    c=scanner.next();
+                    error(c, line, column);
+                    return new Token(TokenClass.INVALID, line, column);
+                }
+            }
+            if (!Character.isDigit(c) && peekChar=='\'') {//if c is a letter and then second single quote
+                c=scanner.next();
+                return new Token(TokenClass.CHAR_LITERAL, line, column);
+            }
+            
+            if (!Character.isDigit(c) && peekChar!='\'') {//checking for multiple characters in single quotes
+                while (c != '\'') {
+                    c=scanner.next();
+                }
+                error(c, line, column);//this one line should solve multi characters in single quotes test problem
+                return new Token(TokenClass.INVALID, line, column);
+            }
+            if (Character.isDigit(c) && peekChar=='\'') {//checking for single integer in single quotes
+                c=scanner.next();
+                return new Token(TokenClass.CHAR_LITERAL, line, column);//
+            }
+            if (Character.isDigit(c) && Character.isDigit(peekChar)) {//checking for int literal
+                while (Character.isDigit(c) && peekChar!='\'') {
+                    c=scanner.next();
+                    peekChar=scanner.peek();
+                }
+                if (Character.isDigit(c) && peekChar=='\'') {
+                    c=scanner.next();
+                    error(c, line, column);
+                    return new Token(TokenClass.INVALID, line, column);
+                }
+                else {
+                    while(c!='\'') {//if we have a few numbers then a character it's no longer an int literal and is invalid
+                        c=scanner.next();
+                    }
+                    error(c, line, column);
+                    return new Token(TokenClass.INVALID, line, column);
+                }
+            }
         }
         
         
@@ -330,9 +353,13 @@ public class Tokeniser {
         			if ("sizeof".equals(sb.toString())) {
         				return new Token(TokenClass.SIZEOF, line, column);
         			}
+
+        			
+        			
+        			
         			return new Token(TokenClass.IDENTIFIER, line, column);
         }
-        
+
         // if we reach this point, it means we did not recognise a valid token
         error(c, line, column);
         return new Token(TokenClass.INVALID, line, column);
