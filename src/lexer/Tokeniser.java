@@ -74,18 +74,19 @@ public class Tokeniser {
         
         //comments and division
         if (c == '/') {
-        		char peekChar = scanner.peek();
-        		if (peekChar!='/') {
-                    return new Token(TokenClass.DIV, line, column);
-        		}
-        		if (c == '/'){
-        			c=scanner.next();
+    		char peekChar = scanner.peek();
+    			if (peekChar!='/') {
+                return new Token(TokenClass.DIV, line, column);
+    			}
+	    		if (c == '/'){
+	    			c=scanner.next();
 	    			while (c!='\n') {//keep scanning until you get to newline
 	    				c=scanner.next();
 	    			}
 	    			return next();
 	    		}
         }
+
         
         if (c == '%')
             return new Token(TokenClass.REM, line, column);
@@ -128,18 +129,16 @@ public class Tokeniser {
         //OR,  // "||"
         if (c == '&') {
     			if (scanner.peek() == '&'){
+    				c=scanner.next();
     				return new Token(TokenClass.AND, line, column);
     			}
-    			error(c, line, column);
-    			return new Token(TokenClass.INVALID, line, column);
 		}
         
         if (c == '|') {
     			if (scanner.peek() == '|'){
+    				c=scanner.next();
     				return new Token(TokenClass.OR, line, column);
     			}
-    			error(c, line, column);
-    			return new Token(TokenClass.INVALID, line, column);
 		}
         
         //ASSIGN and EQ
@@ -147,15 +146,15 @@ public class Tokeniser {
         		if (scanner.peek() == '='){
         			return new Token(TokenClass.EQ, line, column);
         		}
-            return new Token(TokenClass.ASSIGN, line, column);
+        		else {
+        			return new Token(TokenClass.ASSIGN, line, column);
+        		}
     		}
         //NE, // "!="
         if (c == '!') {
 	    		if (scanner.peek() == '='){
 	    			return new Token(TokenClass.NE, line, column);
 	    		}
-	    		error(c, line, column);
-	    		return new Token(TokenClass.INVALID, line, column);
 		}
         //LT, // '<'
 //        GT, // '>'
@@ -177,7 +176,7 @@ public class Tokeniser {
         
         
         //INCLUDE, // "#include"
-        if (c == '#') {
+        if (c == '#' && scanner.peek()=='i') {
         		int 	counter=0;
         		String word = "include ";
         		c=scanner.next();
@@ -188,33 +187,34 @@ public class Tokeniser {
         			counter++;
         			c=scanner.next();
         		}
-        		error(c, line, column);
-        		return new Token(TokenClass.INVALID, line, column);
         }
         
         //String literal type
         if (c == '"') {
-        		c=scanner.next();
-    			if (c == '"'){
+    			c=scanner.next();
+			if (c == '"'){
+				return new Token(TokenClass.STRING_LITERAL, line, column);
+			}
+			if (c=='\\') {//if start of escape character
+				c=scanner.next();
+				if (c=='"') {
+		    			error(c, line, column);
+		    			return new Token(TokenClass.INVALID, line, column);
+				}
+			}
+    			while (c!='"') {
+    				c=scanner.next();
+    				if (c == '"'){
     				return new Token(TokenClass.STRING_LITERAL, line, column);
+    				}
     			}
-        		while (c!='"') {
-        			c=scanner.next();
-        			if (c=='\\') {
-        				char peekChar = scanner.peek();
-        				if (peekChar=='"'){//if you have\ then double quote return error as invalid string
-        					c=scanner.next();
-        					error(c, line, column);
-        					return new Token(TokenClass.INVALID, line, column);
-        				}
-        			}
-        			if (c == '"'){
-        				return new Token(TokenClass.STRING_LITERAL, line, column);
-        			}
-        		}
-        		error(c, line, column);
-        		return new Token(TokenClass.INVALID, line, column);
+    		error(c, line, column);
+    		return new Token(TokenClass.INVALID, line, column);
         }
+
+        		//error(c, line, column);
+        		//return new Token(TokenClass.INVALID, line, column);
+        
         //NOT TESTED
         //char literal and int literal
         //CHAR_LITERAL,   // \'('a'|...|'z'|'A'|...|'Z'|'\t'|'\b'|'\n'|'\r'|'\f'|'\''|'\"'|'\\'|'\0'|'.'|','|'_'|...)\'  a character starts and end with a single quote '
@@ -222,24 +222,36 @@ public class Tokeniser {
         if (c == '\''){ //if we have single quote
         		c=scanner.next();
         		char peekChar = scanner.peek();
-
+        		if (c=='\'') {//if you have '' this is invalid
+        			error(c, line, column);
+            		return new Token(TokenClass.INVALID, line, column);
+        		}
+        		//above works
+        		if (c=='\\') { //if c is a \ then dealing with escape character
+        			c=scanner.next();
+        			peekChar = scanner.peek();
+        			if ((c=='t' || c=='b' || c=='n' 
+        					|| c=='r' || c=='f' || c=='\'' 
+        					|| c=='"' || c=='\\' || c=='0') && peekChar=='\'') {
+        				c = scanner.next();
+        				return new Token(TokenClass.CHAR_LITERAL, line, column);
+        			}
+        			else {
+        				c=scanner.next();
+        				error(c, line, column);
+                		return new Token(TokenClass.INVALID, line, column);
+        			}
+        		}
         		if (!Character.isDigit(c) && peekChar=='\'') {//if c is a letter and then second single quote
         			c=scanner.next();
         			return new Token(TokenClass.CHAR_LITERAL, line, column);
         		}
-        		if (c=='\\') { //if c is a single slash then character then single quote (escape character)
-        			c=scanner.next();
-        			peekChar = scanner.peek();
-        			if ((peekChar=='\'')) {
-        				c=scanner.next();
-        				return new Token(TokenClass.CHAR_LITERAL, line, column);
-        			}
-        		}
+
         		if (!Character.isDigit(c) && peekChar!='\'') {//checking for multiple characters in single quotes
         			while (c != '\'') {
         				c=scanner.next();
         			}
-        			error(c, line, column);//this one line shoukd solve multi characters in single quotes test problem
+        			error(c, line, column);//this one line should solve multi characters in single quotes test problem
         			return new Token(TokenClass.INVALID, line, column);
         		}
         		if (Character.isDigit(c) && peekChar=='\'') {//checking for single integer in single quotes
@@ -263,8 +275,6 @@ public class Tokeniser {
         				return new Token(TokenClass.INVALID, line, column);
         			}
         		}
-        		error(c, line, column);
-        		return new Token(TokenClass.INVALID, line, column);
         }
         
         
@@ -320,54 +330,9 @@ public class Tokeniser {
         			if ("sizeof".equals(sb.toString())) {
         				return new Token(TokenClass.SIZEOF, line, column);
         			}
-
-        			
-        			
-        			
         			return new Token(TokenClass.IDENTIFIER, line, column);
         }
-       
-
         
-        
-        
-//        //Void type
-//        if (c == 'v') {
-//	    		int 	counter=0;
-//	    		String oid = "oid ";
-//	    		c=scanner.next();
-//	    		while (oid.charAt(counter)==c) {
-//	    			if (c==' ' && counter== 3) {
-//	    				return new Token(TokenClass.VOID, line, column);
-//	    			}
-//	    			counter++;
-//	    			c=scanner.next();
-//	   		}
-//	    		return new Token(TokenClass.IDENTIFIER, line, column);
-//    }
-//        //Int type
-//        if (c == 'i') {
-//	    		int 	counter=0;
-//	    		String nt = "nt ";
-//	    		c=scanner.next();
-//	    		while (nt.charAt(counter)==c) {
-//	    			//System.out.println(peekChar);
-//	    			//System.out.println(counter);
-//	    			if (c==' ' && counter== 2) {
-//	    				return new Token(TokenClass.INT, line, column);
-//	    			}
-//	    			counter++;
-//	    			c=scanner.next();
-//	    			//System.out.println(counter);
-//	    			//System.out.println(peekChar);
-//	   		}
-//	    		return new Token(TokenClass.IDENTIFIER, line, column);
-//    }
-        		
-        	
-        
-
-
         // if we reach this point, it means we did not recognise a valid token
         error(c, line, column);
         return new Token(TokenClass.INVALID, line, column);
