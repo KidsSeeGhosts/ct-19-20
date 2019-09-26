@@ -75,10 +75,21 @@ public class Tokeniser {
         //comments and division
         if (c == '/') {
         		char peekChar = scanner.peek();
-        		if (peekChar!='/') {
+        		if (peekChar!='/' && peekChar!='*') {
                     return new Token(TokenClass.DIV, line, column);
         		}
-        		if (c == '/'){
+        		c=scanner.next();
+        		if (c=='*') {
+        			c=scanner.next();
+        			peekChar = scanner.peek();
+        			while (c!='*'||peekChar!='/') {//keep scanning until you get to newline
+	    				c=scanner.next();
+	    				peekChar=scanner.peek();
+	    			}
+        				c=scanner.next();
+            			return next();
+        		}
+        		if (c=='/'){
         			c=scanner.next();
 	    			while (c!='\n') {//keep scanning until you get to newline
 	    				c=scanner.next();
