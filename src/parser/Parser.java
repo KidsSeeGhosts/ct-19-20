@@ -233,6 +233,7 @@ public class Parser {
         		parseStarOpt();
         }
         if (accept(TokenClass.CHAR)) {
+        		//System.out.println("Recognised that we have char");
         		nextToken();
     			parseStarOpt();
         }
@@ -248,6 +249,7 @@ public class Parser {
     }
     private void parseStarOpt() {
     		if (accept(TokenClass.ASTERIX)) {
+    			//System.out.println("Recognised asterix");
     	        expect(TokenClass.ASTERIX);
     		}
     }
@@ -322,6 +324,7 @@ public class Parser {
     			if (accept(TokenClass.ASSIGN)) {
     				nextToken();
     				parseExp();
+    				//System.out.println(token);
     				expect(TokenClass.SC);
     			}
     			if (accept(TokenClass.SC)) {
@@ -386,7 +389,7 @@ public class Parser {
     	    			accept(TokenClass.CHAR_LITERAL) ||
     	    			accept(TokenClass.STRING_LITERAL) ||
     	    			accept(TokenClass.ASTERIX) || accept(TokenClass.SIZEOF)){
-    				parseStmt();
+    				parseStmtRep();
     			}
     		}
     }
@@ -394,15 +397,38 @@ public class Parser {
     
 
     private void parseExp(){
+		if (accept(TokenClass.IDENTIFIER)){//NEED TO CHECK FOR FUNCALL HERE
+			//System.out.println("Recognised identifier print_s");
+			Token checktoken=lookAhead(1);
+			//System.out.println(checktoken);
+			if (checktoken.tokenClass== TokenClass.LPAR) {
+				//System.out.println("About to do fun call");
+				parseFunCall();
+				//System.out.println("About to do parse exp-alt");
+				parseExpAlt();
+				//System.out.println("Finished parse expalt");
+				//System.out.println(token);
+			}
+			else {
+				nextToken();
+				parseExpAlt();
+			}
+		}
     		if (accept(TokenClass.LPAR)){//"(" exp ")" expAlt check for type 
-    			if (accept(TokenClass.INT) || accept(TokenClass.CHAR) || accept(TokenClass.VOID) || accept(TokenClass.STRUCT)) {//if typecast
+    			//System.out.println("Recognised the second left bracket in expression");
+    			//System.out.println(token);
+    			Token checktoken=lookAhead(1);
+    			if ((checktoken.tokenClass== TokenClass.INT) || (checktoken.tokenClass== TokenClass.CHAR) 
+    				|| (checktoken.tokenClass== TokenClass.VOID) || (checktoken.tokenClass== TokenClass.STRUCT)){ //if typecast
     				parseTypeCast();
     				parseExpAlt();
     			}
-    			nextToken();
-    			parseExp();
-    			expect(TokenClass.RPAR);
-    			parseExpAlt();
+    			else {
+	    			nextToken();
+	    			parseExp();
+	    			expect(TokenClass.RPAR);
+	    			parseExpAlt();
+    			}
     		}
     		if (accept(TokenClass.MINUS)){//"-" exp exp'
              	nextToken();
@@ -430,13 +456,7 @@ public class Parser {
         		 parseSizeOf();
         		 parseExpAlt();
       }
-    		if (accept(TokenClass.IDENTIFIER)){//NEED TO CHECK FOR FUNCALL HERE
-    			if (accept(lookAhead(1).tokenClass.LPAR)) {
-    				parseFunCall();
-    				parseExpAlt();
-    			}
-    			parseExpAlt();
-       	}
+
     		
     }
     
@@ -468,6 +488,7 @@ public class Parser {
     		expect(TokenClass.LPAR);
     		parseFunArgsOpt();
     		expect(TokenClass.RPAR);
+    		//System.out.println("finished fun call");
     }
     
     private void parseFunArgsOpt() {
@@ -507,6 +528,7 @@ public class Parser {
     private void parseTypeCast() {
 	    	expect(TokenClass.LPAR);
 	    	parseType();
+	    	//System.out.println(token);
 	    	expect(TokenClass.RPAR);
 	    	parseExp();
     }
