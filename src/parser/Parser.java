@@ -212,9 +212,13 @@ public class Parser {
     
     //fundecl    ::= type IDENT "(" params ")" block
     private void parseFunDecls() {
+    		//System.out.println("Parsing fun decls");
         parseType();
+        //System.out.println(token);
         expect(TokenClass.IDENTIFIER);
         expect(TokenClass.LPAR);
+        //System.out.println(token);
+        //System.out.println("About to parse params");
         parseParams();
         expect(TokenClass.RPAR);
         parseBlock();
@@ -265,24 +269,23 @@ public class Parser {
     
     private void parseParams() {
      	if (accept(TokenClass.INT) || accept(TokenClass.CHAR) || accept(TokenClass.VOID) || accept(TokenClass.STRUCT)) {//checking for type as params optional
+            //System.out.println("Detected type in params");
 	        parseType();
 	        expect(TokenClass.IDENTIFIER);
+	        //System.out.println("Detected identifier in params");
+	        //System.out.println(token);
 	        parseParamsListOpt();
      	}
     }
     
     private void parseParamsListOpt() {//if because it's optional
-	    	if (accept(TokenClass.INT) || accept(TokenClass.CHAR) || accept(TokenClass.VOID) || accept(TokenClass.STRUCT)) {
+	    	if (accept(TokenClass.COMMA)) {
+	    		//System.out.println("Detected comma");
+	    		nextToken();
 	        parseType();
 	        expect(TokenClass.IDENTIFIER);
-	        parseParamsRep();
-	    	}
-    }
-    private void parseParamsRep() {
-	    	if (accept(TokenClass.COMMA)) {
-	    	       expect(TokenClass.COMMA);
-	    	       parseType();
-	    	       expect(TokenClass.IDENTIFIER);
+	        //System.out.println("Detected type and identifier");
+	        parseParamsListOpt();
 	    	}
     }
     
@@ -309,10 +312,14 @@ public class Parser {
     			parseStmt();
     		}
     		if (accept(TokenClass.IF)) {
+    			//System.out.println("recognised if");
     			nextToken();
     			expect(TokenClass.LPAR);
+    			//System.out.println("recognised left bracket");
     			parseExp();
+    			//System.out.println("FINISHED PARSING EXPRESSION IN BRACKETS IN IF IN PARSESMT");
     			expect(TokenClass.RPAR);
+    			//System.out.println("Got the right bracket too");
     			parseStmt();
     			parseElseStmtOpt();
     		}
@@ -365,12 +372,15 @@ public class Parser {
     //vardeclRep ::= vardecl vardeclRep | ε //duplicate
     //stmtRep ::= stmt stmtRep | ε
     private void parseBlock() {
+    		//System.out.println("About to parse block");
         expect(TokenClass.LBRA);
         parseVarDeclRep();
         //System.out.println(token);
         //System.out.println("About to do SmtREP in Block");
         parseStmtRep();
         expect(TokenClass.RBRA);
+        //System.out.println("Finished Block");
+        //System.out.println(token);
     }
     
     private void parseVarDeclRep() {
@@ -392,7 +402,7 @@ public class Parser {
 		accept(TokenClass.ASTERIX) || accept(TokenClass.SIZEOF) ||//exp ones end here
 		accept(TokenClass.WHILE) || accept(TokenClass.IF) ||
 		accept(TokenClass.RETURN) || accept(TokenClass.LBRA)){
-    			//System.out.println(token);
+    			//System.out.println("About to do parseStmt");
     			parseStmt();
     			if (accept(TokenClass.LPAR) || //if start of exp
     					accept(TokenClass.IDENTIFIER) ||
@@ -411,6 +421,7 @@ public class Parser {
     
 
     private void parseExp(){
+    		//System.out.println("About to parse exp");
 		if (accept(TokenClass.IDENTIFIER)){//NEED TO CHECK FOR FUNCALL HERE
 			//System.out.println("recognised identifier in parseExp");
 			Token checktoken=lookAhead(1);
@@ -424,6 +435,8 @@ public class Parser {
 			}
 			else {
 				nextToken();
+				//System.out.println(token);
+				//System.out.println("About to parseExpAlt");
 				//System.out.println(token);
 				//System.out.println("about to do parse exp alt on the operator LT");
 				parseExpAlt();
@@ -451,6 +464,7 @@ public class Parser {
              	parseExpAlt();
            }
     		if (accept(TokenClass.INT_LITERAL)){
+    			//System.out.println("recognised int literal");
     			nextToken();
     			parseExpAlt();
         }
@@ -487,10 +501,11 @@ public class Parser {
     			expect(TokenClass.IDENTIFIER);
     		}
     		if (accept(TokenClass.GT,TokenClass.LT,TokenClass.GE,TokenClass.LE,
-    			TokenClass.NE,TokenClass.PLUS,TokenClass.MINUS,TokenClass.DIV,TokenClass.ASTERIX,TokenClass.REM,TokenClass.OR,TokenClass.AND)) {
-    				//System.out.println("operator detected");//for operators
+    			TokenClass.NE, TokenClass.EQ, TokenClass.PLUS,TokenClass.MINUS,TokenClass.DIV,TokenClass.ASTERIX,TokenClass.REM,TokenClass.OR,TokenClass.AND)) {
+    				//System.out.println("OPERATOR DETECTED");//for operators
     				nextToken();
     				//System.out.println(token);
+    				//System.out.println("About to parse exp");
     				parseExp();
     		}
     }
