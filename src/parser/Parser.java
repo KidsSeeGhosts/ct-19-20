@@ -197,6 +197,8 @@ public class Parser {
         parseType();
         expect(TokenClass.IDENTIFIER);
         if (accept(TokenClass.SC)) {//checks current token is SC
+        	//System.out.println("Finished parsing var decl");
+        	//System.out.println(token);
         		expect(TokenClass.SC);//Doing expect because it's the end of vardecl
         }
         if (accept(TokenClass.LSBR)) {
@@ -289,12 +291,19 @@ public class Parser {
     //elseStmtOpt ::= "else" stmt | ε
     	//expOpt ::= exp | ε
     private void parseStmt() {
+    		//System.out.println("Beginning to parse statement");
+    		//System.out.println(token);
 	    	if (accept(TokenClass.LBRA)) {//if start of block
+	    		//System.out.println("recognised start of block");
+	    		//System.out.println(token);
 	    		parseBlock();
 	    	}
     		if (accept(TokenClass.WHILE)) {
+    			//System.out.println("recognised while");
     			nextToken();
     			expect(TokenClass.LPAR);
+    			//System.out.println("recognised left bracket");
+    			//System.out.println("about to parse exp in while stmt");
     			parseExp();
     			expect(TokenClass.RPAR);
     			parseStmt();
@@ -358,6 +367,7 @@ public class Parser {
     private void parseBlock() {
         expect(TokenClass.LBRA);
         parseVarDeclRep();
+        //System.out.println(token);
         //System.out.println("About to do SmtREP in Block");
         parseStmtRep();
         expect(TokenClass.RBRA);
@@ -379,16 +389,20 @@ public class Parser {
 		accept(TokenClass.MINUS) ||
 		accept(TokenClass.CHAR_LITERAL) ||
 		accept(TokenClass.STRING_LITERAL) ||
-		accept(TokenClass.ASTERIX) || accept(TokenClass.SIZEOF)){
-    			//System.out.println("Got into the first parse stmt");
+		accept(TokenClass.ASTERIX) || accept(TokenClass.SIZEOF) ||//exp ones end here
+		accept(TokenClass.WHILE) || accept(TokenClass.IF) ||
+		accept(TokenClass.RETURN) || accept(TokenClass.LBRA)){
+    			//System.out.println(token);
     			parseStmt();
     			if (accept(TokenClass.LPAR) || //if start of exp
-    	    			accept(TokenClass.IDENTIFIER) ||
-    	    			accept(TokenClass.INT_LITERAL) ||
-    	    			accept(TokenClass.MINUS) ||
-    	    			accept(TokenClass.CHAR_LITERAL) ||
-    	    			accept(TokenClass.STRING_LITERAL) ||
-    	    			accept(TokenClass.ASTERIX) || accept(TokenClass.SIZEOF)){
+    					accept(TokenClass.IDENTIFIER) ||
+    					accept(TokenClass.INT_LITERAL) ||
+    					accept(TokenClass.MINUS) ||
+    					accept(TokenClass.CHAR_LITERAL) ||
+    					accept(TokenClass.STRING_LITERAL) ||
+    					accept(TokenClass.ASTERIX) || accept(TokenClass.SIZEOF) ||
+    					accept(TokenClass.WHILE) || accept(TokenClass.IF) ||
+    					accept(TokenClass.RETURN) || accept(TokenClass.LBRA)){
     				parseStmtRep();
     			}
     		}
@@ -398,9 +412,8 @@ public class Parser {
 
     private void parseExp(){
 		if (accept(TokenClass.IDENTIFIER)){//NEED TO CHECK FOR FUNCALL HERE
-			//System.out.println("Recognised identifier print_s");
+			//System.out.println("recognised identifier in parseExp");
 			Token checktoken=lookAhead(1);
-			//System.out.println(checktoken);
 			if (checktoken.tokenClass== TokenClass.LPAR) {
 				//System.out.println("About to do fun call");
 				parseFunCall();
@@ -411,6 +424,8 @@ public class Parser {
 			}
 			else {
 				nextToken();
+				//System.out.println(token);
+				//System.out.println("about to do parse exp alt on the operator LT");
 				parseExpAlt();
 			}
 		}
@@ -472,8 +487,10 @@ public class Parser {
     			expect(TokenClass.IDENTIFIER);
     		}
     		if (accept(TokenClass.GT,TokenClass.LT,TokenClass.GE,TokenClass.LE,
-    			TokenClass.NE,TokenClass.PLUS,TokenClass.MINUS,TokenClass.DIV,TokenClass.ASTERIX,TokenClass.REM,TokenClass.OR,TokenClass.AND)) {//for operators
+    			TokenClass.NE,TokenClass.PLUS,TokenClass.MINUS,TokenClass.DIV,TokenClass.ASTERIX,TokenClass.REM,TokenClass.OR,TokenClass.AND)) {
+    				//System.out.println("operator detected");//for operators
     				nextToken();
+    				//System.out.println(token);
     				parseExp();
     		}
     }
