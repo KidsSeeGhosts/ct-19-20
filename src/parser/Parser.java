@@ -122,6 +122,7 @@ public class Parser {
 
     private void parseProgram() {
         parseIncludesRep();
+        //System.out.println(token);
         parseStructDeclsRep();
         parseVarDeclsRep();
         parseFunDeclsRep();
@@ -145,6 +146,7 @@ public class Parser {
     
     private void parseStructDeclsRep() {//zero or more
     	if (accept(TokenClass.STRUCT)) {
+    		//System.out.println("Recognised struct, going to parse struct decl");
     		parseStructDecls();
     		if (accept(TokenClass.STRUCT)) {
     			parseStructDeclsRep();
@@ -179,15 +181,18 @@ public class Parser {
     private void parseStructDecls() {
     		parseStructType();
     		expect(TokenClass.LBRA);
+    		//System.out.println("Accepted left bracket");
     		parseVarDeclRepPlus();
     		expect(TokenClass.RBRA);
     		expect(TokenClass.SC);
     }
     //vardeclRepPlus ::= vardecl vardeclRepPlus | vardecl
     private void parseVarDeclRepPlus() {//one or more grammar rule
+    		//System.out.println("About to parse var decl inside vardeclreplus");
     		parseVarDecls();//next check for identifier then semicolon or lsbr to know to parse
-    		if (accept(TokenClass.INT) || accept(TokenClass.CHAR) || accept(TokenClass.VOID) || accept(TokenClass.STRUCT)) {//if we have type identifier and semicolon or left bracket
-    			parseVarDecls();
+    		Token checktoken = lookAhead(2);
+    		if ((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID,TokenClass.STRUCT) && ((checktoken.tokenClass== TokenClass.SC) || (checktoken.tokenClass== TokenClass.LSBR)))) {
+	    		parseVarDeclRepPlus();
     		}
     }
     
@@ -307,21 +312,28 @@ public class Parser {
     			expect(TokenClass.LPAR);
     			//System.out.println("recognised left bracket");
     			//System.out.println("about to parse exp in while stmt");
-    			parseExp();
-    			expect(TokenClass.RPAR);
-    			parseStmt();
+    			if (!accept(TokenClass.RPAR)){
+	    			parseExp();
+	    			expect(TokenClass.RPAR);
+	    			parseStmt();
+    			}
     		}
     		if (accept(TokenClass.IF)) {
     			//System.out.println("recognised if");
     			nextToken();
     			expect(TokenClass.LPAR);
     			//System.out.println("recognised left bracket");
-    			parseExp();
-    			//System.out.println("FINISHED PARSING EXPRESSION IN BRACKETS IN IF IN PARSESMT");
-    			expect(TokenClass.RPAR);
-    			//System.out.println("Got the right bracket too");
-    			parseStmt();
-    			parseElseStmtOpt();
+    			if (!accept(TokenClass.RPAR)){
+    				//System.out.println("Not empty brackets");
+    				parseExp();
+    				//System.out.println("Done parsing expression");
+    				//System.out.println(token);
+    				expect(TokenClass.RPAR);
+    				parseStmt();
+    				//System.out.println("Finished parsing the block in if");
+    				//System.out.println(token);
+    				parseElseStmtOpt();
+    			}
     		}
     		if (accept(TokenClass.RETURN)) {
     			nextToken();
@@ -337,13 +349,12 @@ public class Parser {
     			accept(TokenClass.ASTERIX) || accept(TokenClass.SIZEOF)){
     			//System.out.println("We've got an expression");
     			parseExp();
+    			if (accept(TokenClass.SC)) {
+    				expect(TokenClass.SC);
+    			}
     			if (accept(TokenClass.ASSIGN)) {
     				nextToken();
     				parseExp();
-    				//System.out.println(token);
-    				expect(TokenClass.SC);
-    			}
-    			if (accept(TokenClass.SC)) {
     				expect(TokenClass.SC);
     			}
     			
@@ -374,10 +385,13 @@ public class Parser {
     private void parseBlock() {
     		//System.out.println("About to parse block");
         expect(TokenClass.LBRA);
-        parseVarDeclRep();
+        //System.out.println("Got the left bracket");
+        parseVarDeclsRep();
         //System.out.println(token);
         //System.out.println("About to do SmtREP in Block");
         parseStmtRep();
+        //System.out.println("Finished parsing ");
+        //System.out.println(token);
         expect(TokenClass.RBRA);
         //System.out.println("Finished Block");
         //System.out.println(token);
@@ -403,7 +417,10 @@ public class Parser {
 		accept(TokenClass.WHILE) || accept(TokenClass.IF) ||
 		accept(TokenClass.RETURN) || accept(TokenClass.LBRA)){
     			//System.out.println("About to do parseStmt");
+    			//System.out.println(token);
     			parseStmt();
+    			//System.out.println("Finished parsing statement in rep");
+    			//System.out.println(token);
     			if (accept(TokenClass.LPAR) || //if start of exp
     					accept(TokenClass.IDENTIFIER) ||
     					accept(TokenClass.INT_LITERAL) ||
@@ -413,6 +430,7 @@ public class Parser {
     					accept(TokenClass.ASTERIX) || accept(TokenClass.SIZEOF) ||
     					accept(TokenClass.WHILE) || accept(TokenClass.IF) ||
     					accept(TokenClass.RETURN) || accept(TokenClass.LBRA)){
+    				//System.out.println("HERE");
     				parseStmtRep();
     			}
     		}
