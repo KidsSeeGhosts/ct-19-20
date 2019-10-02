@@ -155,23 +155,63 @@ public class Parser {
 }
     
     private void parseVarDeclsRep() {//zero or more
-    	Token checktoken = lookAhead(2);
-	    	if ((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID,TokenClass.STRUCT) && ((checktoken.tokenClass== TokenClass.SC) || (checktoken.tokenClass== TokenClass.LSBR)))) {
+    	Token checktoken1 = lookAhead(1);
+    	Token checktoken2 = lookAhead(2);
+    	Token checktoken3 = lookAhead(3);//for if we have a star
+    	Token checktoken4 = lookAhead(4);
+	    	if  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass!=TokenClass.ASTERIX) && ((checktoken2.tokenClass== TokenClass.SC) || (checktoken2.tokenClass== TokenClass.LSBR)))
+	    			||//int abc;
+	    			((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass==TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.SC) || (checktoken3.tokenClass== TokenClass.LSBR)))
+	    			||//int * abc;
+	    			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass!=TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.SC) || (checktoken3.tokenClass== TokenClass.LSBR)))
+	    			||//struct abc abc;
+	    			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass==TokenClass.ASTERIX) && ((checktoken4.tokenClass== TokenClass.SC) || (checktoken4.tokenClass== TokenClass.LSBR)))
+	    			//struct* abc abc;
+	    			){
+	    		//System.out.println("about to parse the var decl");
 	    		parseVarDecls();
-	    		if ((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID,TokenClass.STRUCT) && ((checktoken.tokenClass== TokenClass.SC) || (checktoken.tokenClass== TokenClass.LSBR)))) {
+	    		if  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass!=TokenClass.ASTERIX) && ((checktoken2.tokenClass== TokenClass.SC) || (checktoken2.tokenClass== TokenClass.LSBR)))
+	        			||//int abc;
+	        			((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass==TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.SC) || (checktoken3.tokenClass== TokenClass.LSBR)))
+	        			||//int * abc;
+	        			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass!=TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.SC) || (checktoken3.tokenClass== TokenClass.LSBR)))
+	        			||//struct abc abc;
+	        			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass==TokenClass.ASTERIX) && ((checktoken4.tokenClass== TokenClass.SC) || (checktoken4.tokenClass== TokenClass.LSBR)))
+	        			//struct* abc abc;
+	        			){
 	    			parseVarDeclsRep();
 	    		}
 	    	}
     }
     
     private void parseFunDeclsRep() {
-    		Token checktoken = lookAhead(2);
-    		if ((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID,TokenClass.STRUCT)) && (checktoken.tokenClass==TokenClass.LPAR)) {
-    			parseFunDecls();
-        		if ((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID,TokenClass.STRUCT)) && (checktoken.tokenClass==TokenClass.LPAR)) {
+    	Token checktoken1 = lookAhead(1);
+    	Token checktoken2 = lookAhead(2);
+    	Token checktoken3 = lookAhead(3);//for if we have a star
+    	Token checktoken4 = lookAhead(4);
+	    	if  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass!=TokenClass.ASTERIX) && ((checktoken2.tokenClass== TokenClass.LPAR)))
+	    			||//int abc;
+	    			((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass==TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.LPAR)))
+	    			||//int * abc;
+	    			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass!=TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.LPAR)))
+	    			||//struct abc abc;
+	    			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass==TokenClass.ASTERIX) && ((checktoken4.tokenClass== TokenClass.LPAR)))
+	    			//struct* abc abc;
+	    			){
+	    		System.out.println("about to parse the var decl");
+	    		parseFunDecls();
+	    		if  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass!=TokenClass.ASTERIX) && ((checktoken2.tokenClass== TokenClass.LPAR)))
+	        			||//int abc;
+	        			((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass==TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.LPAR)))
+	        			||//int * abc;
+	        			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass!=TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.LPAR)))
+	        			||//struct abc abc;
+	        			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass==TokenClass.ASTERIX) && ((checktoken4.tokenClass== TokenClass.LPAR)))
+	        			//struct* abc abc;
+	        			){
 	    			parseFunDeclsRep();
 	    		}
-    		}
+	    	}
     }
     
     
@@ -253,8 +293,7 @@ public class Parser {
     			parseStarOpt();
         }
         if (accept(TokenClass.STRUCT)) {
-    			nextToken();
-    			expect(TokenClass.IDENTIFIER);
+    			parseStructType();
 			parseStarOpt();
         }
     }

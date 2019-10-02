@@ -1,12 +1,8 @@
 #include "minic-stdlib.h"
 
+struct yay { int n; char c;  } ; 
+
 void main() {
-    int n;
-    int first;
-    int second;
-    int next;
-    int c;
-    char t;
     
     // read n from the standard input
     n = read_i();
