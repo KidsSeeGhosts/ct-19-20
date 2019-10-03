@@ -146,8 +146,10 @@ public class Parser {
     
     private void parseStructDeclsRep() {//zero or more
     	if (accept(TokenClass.STRUCT)) {
-    		//System.out.println("Recognised struct, going to parse struct decl");
+    		System.out.println("Recognised struct, going to parse struct decl");
     		parseStructDecls();
+    		System.out.println("Finished parsing struct decl");
+    		System.out.println(token);
     		if (accept(TokenClass.STRUCT)) {
     			parseStructDeclsRep();
     		}
@@ -169,16 +171,24 @@ public class Parser {
 	    			//struct* abc abc;
 	    			){
 	    		//System.out.println("about to parse the var decl");
+	    		//System.out.println(token);
 	    		parseVarDecls();
-	    		if  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass!=TokenClass.ASTERIX) && ((checktoken2.tokenClass== TokenClass.SC) || (checktoken2.tokenClass== TokenClass.LSBR)))
+	    		//System.out.println("BACK IN VAR DECLS REP");
+	    		//System.out.println(token);
+	        	Token secondchecktoken1 = lookAhead(1);
+	        	Token secondchecktoken2 = lookAhead(2);
+	        	Token secondchecktoken3 = lookAhead(3);//for if we have a star
+	        	Token secondchecktoken4 = lookAhead(4);
+	    		if  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (secondchecktoken1.tokenClass!=TokenClass.ASTERIX) && ((secondchecktoken2.tokenClass== TokenClass.SC) || (secondchecktoken2.tokenClass== TokenClass.LSBR)))
 	        			||//int abc;
-	        			((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass==TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.SC) || (checktoken3.tokenClass== TokenClass.LSBR)))
+	        			((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (secondchecktoken1.tokenClass==TokenClass.ASTERIX) && ((secondchecktoken3.tokenClass== TokenClass.SC) || (secondchecktoken3.tokenClass== TokenClass.LSBR)))
 	        			||//int * abc;
-	        			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass!=TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.SC) || (checktoken3.tokenClass== TokenClass.LSBR)))
+	        			((accept(TokenClass.STRUCT)) && (secondchecktoken2.tokenClass!=TokenClass.ASTERIX) && ((secondchecktoken3.tokenClass== TokenClass.SC) || (secondchecktoken3.tokenClass== TokenClass.LSBR)))
 	        			||//struct abc abc;
-	        			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass==TokenClass.ASTERIX) && ((checktoken4.tokenClass== TokenClass.SC) || (checktoken4.tokenClass== TokenClass.LSBR)))
+	        			((accept(TokenClass.STRUCT)) && (secondchecktoken2.tokenClass==TokenClass.ASTERIX) && ((secondchecktoken4.tokenClass== TokenClass.SC) || (secondchecktoken4.tokenClass== TokenClass.LSBR)))
 	        			//struct* abc abc;
 	        			){
+	    			//System.out.println("Should be here");
 	    			parseVarDeclsRep();
 	    		}
 	    	}
@@ -198,15 +208,19 @@ public class Parser {
 	    			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass==TokenClass.ASTERIX) && ((checktoken4.tokenClass== TokenClass.LPAR)))
 	    			//struct* abc abc;
 	    			){
-	    		System.out.println("about to parse the var decl");
+	    		//System.out.println("about to parse the var decl");
+	        	Token secondchecktoken1 = lookAhead(1);
+	        	Token secondchecktoken2 = lookAhead(2);
+	        	Token secondchecktoken3 = lookAhead(3);//for if we have a star
+	        	Token secondchecktoken4 = lookAhead(4);
 	    		parseFunDecls();
-	    		if  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass!=TokenClass.ASTERIX) && ((checktoken2.tokenClass== TokenClass.LPAR)))
+	    		if  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (secondchecktoken1.tokenClass!=TokenClass.ASTERIX) && ((secondchecktoken2.tokenClass== TokenClass.LPAR)))
 	        			||//int abc;
-	        			((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass==TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.LPAR)))
+	        			((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (secondchecktoken1.tokenClass==TokenClass.ASTERIX) && ((secondchecktoken3.tokenClass== TokenClass.LPAR)))
 	        			||//int * abc;
-	        			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass!=TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.LPAR)))
+	        			((accept(TokenClass.STRUCT)) && (secondchecktoken2.tokenClass!=TokenClass.ASTERIX) && ((secondchecktoken3.tokenClass== TokenClass.LPAR)))
 	        			||//struct abc abc;
-	        			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass==TokenClass.ASTERIX) && ((checktoken4.tokenClass== TokenClass.LPAR)))
+	        			((accept(TokenClass.STRUCT)) && (secondchecktoken2.tokenClass==TokenClass.ASTERIX) && ((secondchecktoken4.tokenClass== TokenClass.LPAR)))
 	        			//struct* abc abc;
 	        			){
 	    			parseFunDeclsRep();
@@ -242,7 +256,7 @@ public class Parser {
         parseType();
         expect(TokenClass.IDENTIFIER);
         if (accept(TokenClass.SC)) {//checks current token is SC
-        	//System.out.println("Finished parsing var decl");
+        	//System.out.println("Finished parsing var decl as we've reached semicolon");
         	//System.out.println(token);
         		expect(TokenClass.SC);//Doing expect because it's the end of vardecl
         }
@@ -422,9 +436,11 @@ public class Parser {
     //vardeclRep ::= vardecl vardeclRep | ε //duplicate
     //stmtRep ::= stmt stmtRep | ε
     private void parseBlock() {
-    		//System.out.println("About to parse block");
+    		//System.out.println("About to parse main block");
         expect(TokenClass.LBRA);
         //System.out.println("Got the left bracket");
+        //System.out.println(token);
+        //System.out.println("About to do var decls rep");
         parseVarDeclsRep();
         //System.out.println(token);
         //System.out.println("About to do SmtREP in Block");
@@ -434,15 +450,6 @@ public class Parser {
         expect(TokenClass.RBRA);
         //System.out.println("Finished Block");
         //System.out.println(token);
-    }
-    
-    private void parseVarDeclRep() {
-    		if (accept(TokenClass.INT) || accept(TokenClass.CHAR) || accept(TokenClass.VOID) || accept(TokenClass.STRUCT)) {
-    			parseVarDecls();
-    			if (accept(TokenClass.INT) || accept(TokenClass.CHAR) || accept(TokenClass.VOID) || accept(TokenClass.STRUCT)) {
-    				parseVarDeclRep();
-    			}
-    		}
     }
     
     private void parseStmtRep() {
