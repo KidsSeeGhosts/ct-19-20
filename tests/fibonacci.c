@@ -1,7 +1,6 @@
 #include "minic-stdlib.h"
 
 void main() {
-    struct a b;
     int n;
     int first;
     int second;
