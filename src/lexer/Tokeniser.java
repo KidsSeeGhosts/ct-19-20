@@ -218,26 +218,44 @@ public class Tokeniser {
         //String literal type
         if (c == '"') {
             char peekChar=scanner.peek();
-            if (peekChar == '"'){
+            if (peekChar == '\n'){
+        		error(c, line, column);
+            return new Token(TokenClass.INVALID, line, column);
+            }
+            if (peekChar == '"'){//string literal fine for empty string
             		c=scanner.next();
                 return new Token(TokenClass.STRING_LITERAL, line, column);
             }
             while (peekChar!='"') {
                 c=scanner.next();
-                if (c=='\\') {//if start of escape character THE ONLY THING I'VE SAID HERE IS YOU CAN'T END IN A \ IN A STRING
+                peekChar = scanner.peek();
+                if (c=='\\') {//if potentially start of escape character
                     c=scanner.next();
                     peekChar=scanner.peek();
-                    if (c =='"' && peekChar!= '"') {//if we have "hello\" this is error
-                        error(c, line, column);
+                    if (!(c=='t' || c=='b' || c=='n'
+                            || c=='r' || c=='f' || c=='\''
+                            || c=='"' || c=='\\' || c=='0')) {
+                    		//while (!(peekChar=='\n' || peekChar=='"')) {//if we have an invalid escape character, get to the end of the string or hit new line and say invalid
+                    		//		c=scanner.next();
+                        //        peekChar=scanner.peek();
+                    		//}
+                    		error(c, line, column);
                         return new Token(TokenClass.INVALID, line, column);
                     }
-                    if (peekChar=='"') {//but if we have "hello\"" this is fine
+                    if ((c=='t' || c=='b' || c=='n'
+                            || c=='r' || c=='f' || c=='\''
+                            || c=='"' || c=='\\' || c=='0') && peekChar=='"') {//
                     	    c=scanner.next();
                         return new Token(TokenClass.STRING_LITERAL, line, column);
                     }
                 }
-                if (c == '"'){
+                if (peekChar == '"'){
+                		c=scanner.next();
                     return new Token(TokenClass.STRING_LITERAL, line, column);
+                }
+                if (peekChar == '\n'){
+	            		error(c, line, column);
+	                return new Token(TokenClass.INVALID, line, column);
                 }
             }
             error(c, line, column);
@@ -249,14 +267,23 @@ public class Tokeniser {
         //INT_LITERAL,    // ('0'|...|'9')+
         
         if (c == '\''){ //if we have single quote
-            c=scanner.next();
             char peekChar = scanner.peek();
+            if (peekChar == '\n'){
+	        		error(c, line, column);
+	            return new Token(TokenClass.INVALID, line, column);
+            }
+            c=scanner.next();
+            peekChar = scanner.peek();
             if (c=='\'') {//if you have '' this is invalid
                 error(c, line, column);
                 return new Token(TokenClass.INVALID, line, column);
             }
-            //above works
             if (c=='\\') { //if c is a \ then dealing with escape character
+                peekChar = scanner.peek();
+                if (peekChar == '\n'){
+		        		error(c, line, column);
+		            return new Token(TokenClass.INVALID, line, column);
+                }
                 c=scanner.next();
                 peekChar = scanner.peek();
                 if ((c=='t' || c=='b' || c=='n'
@@ -281,9 +308,9 @@ public class Tokeniser {
             }
             
             if (!Character.isDigit(c) && peekChar!='\'') {//checking for multiple characters in single quotes
-                while (c != '\'') {
-                    c=scanner.next();
-                }
+                //while (c != '\'') {
+                //    c=scanner.next();
+                //}
                 error(c, line, column);//this one line should solve multi characters in single quotes test problem
                 return new Token(TokenClass.INVALID, line, column);
             }
