@@ -525,7 +525,7 @@ public class Parser {
 		}
     		if (accept(TokenClass.LPAR)){//"(" exp ")" expAlt check for type 
     			//System.out.println("Recognised the second left bracket in expression");
-    			//System.out.println(token);
+    			//System.out.println(token) ;
     			Token checktoken=lookAhead(1);
     			if ((checktoken.tokenClass== TokenClass.INT) || (checktoken.tokenClass== TokenClass.CHAR) 
     				|| (checktoken.tokenClass== TokenClass.VOID) || (checktoken.tokenClass== TokenClass.STRUCT)){ //if typecast
@@ -576,10 +576,14 @@ public class Parser {
     			nextToken();
     			parseExp();
     			expect(TokenClass.RSBR);
+    			parseExpAlt();
     		}
     		if (accept(TokenClass.DOT)) {//FOR FIELD ACCESS
+    			//System.out.println("found the dot");
     			nextToken();
+    			//System.out.println(token);
     			expect(TokenClass.IDENTIFIER);
+    			parseExpAlt();
     		}
     		if (accept(TokenClass.GT,TokenClass.LT,TokenClass.GE,TokenClass.LE,
     			TokenClass.NE, TokenClass.EQ, TokenClass.PLUS,TokenClass.MINUS,TokenClass.DIV,TokenClass.ASTERIX,TokenClass.REM,TokenClass.OR,TokenClass.AND)) {
@@ -588,6 +592,7 @@ public class Parser {
     				//System.out.println(token);
     				//System.out.println("About to parse exp");
     				parseExp();
+    				parseExpAlt();
     		}
     }
     
