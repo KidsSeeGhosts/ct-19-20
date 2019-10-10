@@ -1,10 +1,13 @@
 package parser;
 
+import ast.*;
+
 import lexer.Token;
 import lexer.Tokeniser;
 import lexer.Token.TokenClass;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 
@@ -26,11 +29,11 @@ public class Parser {
         this.tokeniser = tokeniser;
     }
 
-    public void parse() {
+    public Program parse() {
         // get the first token
         nextToken();
 
-        parseProgram();
+        return parseProgram();
     }
 
     public int getErrorCount() {
@@ -120,13 +123,22 @@ public class Parser {
     }
 
 
+<<<<<<< HEAD
     private void parseProgram() {
         parseIncludesRep();
         //System.out.println(token);
         parseStructDeclsRep();
         parseVarDeclsRep();
         parseFunDeclsRep();
+=======
+    private Program parseProgram() {
+        parseIncludes();
+        List<StructTypeDecl> stds = parseStructDecls();
+        List<VarDecl> vds = parseVarDecls();
+        List<FunDecl> fds = parseFunDecls();
+>>>>>>> f8e3a2a15ffbd0787347f7ecde6275ee8e851517
         expect(TokenClass.EOF);
+        return new Program(stds, vds, fds);
     }
 
     // includes are ignored, so does not need to return an AST node
@@ -230,6 +242,7 @@ public class Parser {
     
     
 
+<<<<<<< HEAD
     //structdecl ::= structtype "{" vardeclRepPlus "}" ";"
     //vardeclRepPlus ::= vardecl vardeclRepPlus | vardecl
     private void parseStructDecls() {
@@ -297,6 +310,21 @@ public class Parser {
         expect(TokenClass.RPAR);
         //System.out.println("About to parse block");
         parseBlock();
+=======
+    private List<StructTypeDecl> parseStructDecls() {
+        // to be completed ...
+        return null;
+    }
+
+    private List<VarDecl> parseVarDecls() {
+        // to be completed ...
+        return null;
+    }
+
+    private List<FunDecl> parseFunDecls() {
+        // to be completed ...
+        return null;
+>>>>>>> f8e3a2a15ffbd0787347f7ecde6275ee8e851517
     }
 
     private void parseStructType() {
