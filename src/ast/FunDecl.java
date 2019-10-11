@@ -4,7 +4,7 @@ import java.util.List;
 
 public class FunDecl implements ASTNode {
     public final Type type;
-    public final String name;
+    public final String  name;
     public final List<VarDecl> params;
     public final Block block;
 
