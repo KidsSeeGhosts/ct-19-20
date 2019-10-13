@@ -7,6 +7,47 @@ char a11; char a12; char a13;
 char a21; char a22; char a23;
 char a31; char a32; char a33;
 char empty; // Empty cell character
+
+// Resets the board
+void reset() {
+    a11 = empty; a12 = empty;  a13 = empty;
+    a21 = empty; a22 = empty;  a23 = empty;
+    a31 = empty; a32 = empty;  a33 = empty;
+}
+
+// Predicate indicating whether all board cells are filled.
+// 1 => true
+// 0 => false
+int full() {
+    int n;
+    n = 0;
+    if (a11 != empty)
+        n = n + 1;
+    if (a21 != empty)
+        n = n + 1;
+    if (a31 != empty)
+        n = n + 1;
+    
+    if (a12 != empty)
+        n = n + 1;
+    if (a22 != empty)
+        n = n + 1;
+    if (a32 != empty)
+        n = n + 1;
+    
+    if (a13 != empty)
+        n = n + 1;
+    if (a23 != empty)
+        n = n + 1;
+    if (a33 != empty)
+        n = n + 1;
+    
+    if (n == 9)
+        return 1;
+    else
+        return 0;
+}
+
 // Attempts to put mark in cell (row,col)
 // Returns 1 on success, otherwise -1 is returned when the cell is already occupied, and 0 when the move is not within the board range.
 int set(char row, int col, char mark) {
@@ -249,4 +290,3 @@ void main() {
         }
     }
 }
-

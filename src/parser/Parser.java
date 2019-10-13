@@ -571,9 +571,12 @@ public class Parser {
     }
     
     private FunCallExpr parseFunCall() {
+    		//System.out.println("About to parse funcall expr");
 	    	String string = token.data;
+	    	//System.out.println(string);
 	    	expect(TokenClass.IDENTIFIER);
 	    	expect(TokenClass.LPAR);
+	    //	System.out.println("got lpar");
 	    List<Expr> expressions=	parseFunArgsOpt();
 	    	expect(TokenClass.RPAR);
 	    	return new FunCallExpr(string,expressions);
@@ -588,8 +591,16 @@ public class Parser {
 	    			accept(TokenClass.CHAR_LITERAL) ||
 	    			accept(TokenClass.STRING_LITERAL) ||
 	    			accept(TokenClass.ASTERIX) || accept(TokenClass.SIZEOF)) {
+	    		//System.out.println(token.data);
 	    		Expr expr = parseExp();
+	    		//System.out.println(token.data);
 	    		funArgsOpt.add(expr);
+	    		if (token.tokenClass==TokenClass.RPAR) {
+	    		 	return funArgsOpt;//if we've reached the end of expressions go back to parseFunCall
+	    		}
+	    		else {
+	    			nextToken();
+	    		}
 	    	}
 	    	return funArgsOpt;
     }
