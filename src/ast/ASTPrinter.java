@@ -87,9 +87,9 @@ public class ASTPrinter implements ASTVisitor<Void> {
     @Override
     public Void visitBaseType(BaseType bt) {
         // to complete ...
-    		writer.print("BaseType(");
+    		//writer.print("BaseType(");
     		writer.print(bt.toString());//gives name of the enum constant. not sure if i use .name or .toString
-    		writer.print(")");
+    		//writer.print(")");
         return null;
     }
 
@@ -115,9 +115,8 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override
 	public Void visitPointerType(PointerType pt) {
 		writer.print("PointerType(");
-		writer.print("Type(");
 		writer.print(pt.type);
-		writer.print("))");
+		writer.print(")");
 		return null;
 	}
 
@@ -167,10 +166,11 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	public Void visitFunCallExpr(FunCallExpr funCallExpr) {
 		String delimiter = "";
 		writer.print("FunCallExpr(");
-		writer.print("String(");
-		writer.print(funCallExpr.string+")");
-		writer.print(",");//might need to say EXPR( here
+		//writer.print("String(");
+		writer.print(funCallExpr.string);
+		//writer.print(",");//might need to say EXPR( here
 		for (Expr exp : funCallExpr.expressions){//this is probably not how you print the expressions list
+			writer.print(",");
 			writer.print(delimiter);
             delimiter = ",";
             exp.accept(this);
@@ -182,22 +182,19 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override //BinOp      ::= Expr Op Expr
 	public Void visitBinOp(BinOp binOp) {
 		writer.print("BinOp(");
-		writer.print("Expression(");
-		writer.print(binOp.lhs+"),");
-		writer.print("Op(");
-		writer.print(binOp.op+"),");
-		writer.print("Expression(");
-		writer.print(binOp.rhs+"))");
+		binOp.lhs.accept(this);
+		writer.print(",");
+		writer.print(binOp.op+",");
+		binOp.rhs.accept(this);
+		writer.print(")");
 		return null;
 	}
 
 	@Override //ArrayAccessExpr ::= Expr Expr
 	public Void visitArrayAccessExpr(ArrayAccessExpr arrayAccessExpr) {
 		writer.print("ArrayAccessExpr(");
-		writer.print("Expression(");
-		writer.print(arrayAccessExpr.expr1+"),");
-		writer.print("Expression(");
-		writer.print(arrayAccessExpr.expr2+")"+")");
+		writer.print(arrayAccessExpr.expr1+",");
+		writer.print(arrayAccessExpr.expr2+")");
 		return null;
 	}
 	
@@ -216,8 +213,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override   //ValueAtExpr ::= Expr
 	public Void visitValueAtExpr(ValueAtExpr valueAtExpr) {//This Expression() stuff I've been doing is definitely wrong but it's temporary
 		writer.print("ValueAtExpr(");
-		writer.print("Expression(");
-		writer.print(valueAtExpr.expr+"))");
+		writer.print(valueAtExpr.expr+")");
 		return null;
 	}
 
@@ -236,7 +232,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 		typeCastExpr.type.accept(this);
 		writer.print(",");
 		typeCastExpr.expr.accept(this);
-		writer.print(",");
+		writer.print(")");
 		return null;
 	}
 
@@ -244,6 +240,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	public Void visitWhile(While myWhile) {
 		writer.print("While(");
 		myWhile.expr.accept(this);
+		writer.print(",");
 		myWhile.stmt.accept(this);
 		writer.print(")");
 		return null;
@@ -253,7 +250,9 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	public Void visitIf(If myIf) {
 		writer.print("If(");
 		myIf.expr.accept(this);
+		writer.print(",");
 		myIf.stmt.accept(this);
+		writer.print(",");
 		myIf.optStmt.accept(this);
 		writer.print(")");
 		return null;
@@ -263,7 +262,9 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	public Void visitAssign(Assign assign) {
 		writer.print("Assign(");
 		assign.expr1.accept(this);
+		writer.print(",");
 		assign.expr2.accept(this);
+		writer.print(")");;
 		return null;
 	}
 
@@ -279,11 +280,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	public Void visitReturn(Return myReturn) {
 		writer.print("Return(");
 		myReturn.optExpr.accept(this);
+		writer.print(")");
 		return null;
 	}
-	
-	
-
-    // to complete ...
-    
 }
