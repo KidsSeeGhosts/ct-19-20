@@ -34,9 +34,17 @@ public class ASTPrinter implements ASTVisitor<Void> {
         writer.print("FunDecl(");
         fd.type.accept(this);
         writer.print(","+fd.name+",");
-        for (VarDecl vd : fd.params) {
-            vd.accept(this);
-            writer.print(",");
+        String delimiter = "";
+        if (!fd.vardecls.isEmpty()){
+	        	for (VarDecl vd : fd.vardecls) {
+	                writer.print(delimiter);
+	                delimiter = ",";
+	                vd.accept(this);
+	            }
+	        		writer.print(",");
+	            fd.block.accept(this);
+	            writer.print(")");
+	            return null;
         }
         fd.block.accept(this);
         writer.print(")");
@@ -252,8 +260,10 @@ public class ASTPrinter implements ASTVisitor<Void> {
 		myIf.expr.accept(this);
 		writer.print(",");
 		myIf.stmt.accept(this);
-		writer.print(",");
-		myIf.optStmt.accept(this);
+		if (myIf.optStmt!=null){
+			writer.print(",");
+			myIf.optStmt.accept(this);
+		}
 		writer.print(")");
 		return null;
 	}
@@ -279,7 +289,9 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override
 	public Void visitReturn(Return myReturn) {
 		writer.print("Return(");
-		myReturn.optExpr.accept(this);
+		if (myReturn.optExpr!=null) {
+			myReturn.optExpr.accept(this);
+		}
 		writer.print(")");
 		return null;
 	}

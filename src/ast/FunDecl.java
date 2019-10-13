@@ -5,13 +5,13 @@ import java.util.List;
 public class FunDecl implements ASTNode {
     public final Type type;
     public final String  name;
-    public final List<VarDecl> params;
+    public final List<VarDecl> vardecls;
     public final Block block;
 
-    public FunDecl(Type type, String name, List<VarDecl> params, Block block) {
+    public FunDecl(Type type, String name, List<VarDecl> vardecls, Block block) {
 	    this.type = type;
 	    this.name = name;
-	    this.params = params;
+	    this.vardecls = vardecls;
 	    this.block = block;
     }
 

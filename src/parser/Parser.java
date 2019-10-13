@@ -364,22 +364,28 @@ public class Parser {
     		expect(TokenClass.IDENTIFIER);
     		expect(TokenClass.LPAR);
     		//System.out.println("About to do parse params");
-    		List<VarDecl> params = parseParams();
+    		List<VarDecl> vardecls = parseParams();
     		expect(TokenClass.RPAR);
     		//System.out.println("about to parse block");
     		Block block = parseBlock();
-    		return new FunDecl(type,name,params,block);
+    		return new FunDecl(type,name,vardecls,block);
     }
     
 
     private List<VarDecl> parseParams(){//this one is very different to the original
     		List<VarDecl> params=new ArrayList<VarDecl>();
 	    	if (accept(TokenClass.INT) || accept(TokenClass.CHAR) || accept(TokenClass.VOID) || accept(TokenClass.STRUCT)) {
-	    		VarDecl vd = parseVarDecls();
+	    		Type type = parseType();//type swallowed
+	    		String name = token.data;
+	    		expect(TokenClass.IDENTIFIER);//swallow identifier
+	    		VarDecl vd = new VarDecl(type,name);//gonna need to change this!
 	    		params.add(vd);
 	    		while (accept(TokenClass.COMMA)) {//Got ride of parse params list opt just implemented it here instead
 	    			nextToken();
-	    			vd = parseVarDecls();
+	    			type = parseType();//type swallowed
+		    		name = token.data;
+		    		expect(TokenClass.IDENTIFIER);//swallow identifier
+		    		vd = new VarDecl(type,name);//gonna need to change this!
 		    		params.add(vd);
 	    		}
 	    		return params;
