@@ -60,23 +60,23 @@ public class Tokeniser {
 
         // recognises the plus operator
         if (c == '+')
-            return new Token(TokenClass.PLUS, line, column);
+            return new Token(TokenClass.PLUS,"+", line, column);
      // operators
 //        MINUS, // '-'
 //        ASTERIX, // '*'  // can be used for multiplication or pointers
 //        DIV,   // '/'
 //        REM,   // '%'
         if (c == '-')
-            return new Token(TokenClass.MINUS, line, column);
+            return new Token(TokenClass.MINUS,"-",line, column);
         
         if (c == '*')
-            return new Token(TokenClass.ASTERIX, line, column);
+            return new Token(TokenClass.ASTERIX,"*", line, column);
         
         //comments and division
         if (c == '/') {
         		char peekChar = scanner.peek();
         		if (peekChar!='/' && peekChar!='*') {
-                    return new Token(TokenClass.DIV, line, column);
+                    return new Token(TokenClass.DIV,"/", line, column);
         		}
         		c=scanner.next();
         		if (c=='*') {
@@ -99,39 +99,39 @@ public class Tokeniser {
         }
         
         if (c == '%')
-            return new Token(TokenClass.REM, line, column);
+            return new Token(TokenClass.REM,"%", line, column);
 
         // ... to be completed
         if (c == '.')
-            return new Token(TokenClass.DOT, line, column);
+            return new Token(TokenClass.DOT,".", line, column);
         
         if (c == ';')
-            return new Token(TokenClass.SC, line, column);
+            return new Token(TokenClass.SC,";", line, column);
         
         //COMMA, // ','
         if (c == ',')
-            return new Token(TokenClass.COMMA, line, column);
+            return new Token(TokenClass.COMMA,",", line, column);
         
         if (c == '}')
-            return new Token(TokenClass.RBRA, line, column);
+            return new Token(TokenClass.RBRA,"}", line, column);
         
         if (c == '{')
-            return new Token(TokenClass.LBRA, line, column);
+            return new Token(TokenClass.LBRA,"{", line, column);
         
         //LPAR,  // '(' // left parenthesis
         //RPAR,  // ')' // right parenthesis
         if (c == '(')
-            return new Token(TokenClass.LPAR, line, column);
+            return new Token(TokenClass.LPAR,"(", line, column);
         
         if (c == ')')
-            return new Token(TokenClass.RPAR, line, column);
+            return new Token(TokenClass.RPAR,")", line, column);
         //LSBR,  // '[' // left square brace
         //RSBR,  // ']' // left square brace
         if (c == '[')
-            return new Token(TokenClass.LSBR, line, column);
+            return new Token(TokenClass.LSBR,"[", line, column);
         
         if (c == ']')
-            return new Token(TokenClass.RSBR, line, column);
+            return new Token(TokenClass.RSBR,"]", line, column);
         
         
         // logical operators
@@ -140,7 +140,7 @@ public class Tokeniser {
         if (c == '&') {
     			if (scanner.peek() == '&'){
     				c=scanner.next();
-    				return new Token(TokenClass.AND, line, column);
+    				return new Token(TokenClass.AND,"&&", line, column);
     			}
     			return new Token(TokenClass.INVALID, line, column);
 		}
@@ -148,7 +148,7 @@ public class Tokeniser {
         if (c == '|') {
     			if (scanner.peek() == '|'){
     				c=scanner.next();
-    				return new Token(TokenClass.OR, line, column);
+    				return new Token(TokenClass.OR,"||", line, column);
     			}
     			return new Token(TokenClass.INVALID, line, column);
 		}
@@ -157,15 +157,15 @@ public class Tokeniser {
         if (c == '=') {
         		if (scanner.peek() == '='){
         			c=scanner.next();
-        			return new Token(TokenClass.EQ, line, column);
+        			return new Token(TokenClass.EQ,"==", line, column);
         		}
-            return new Token(TokenClass.ASSIGN, line, column);
+            return new Token(TokenClass.ASSIGN,"=", line, column);
     		}
         //NE, // "!="
         if (c == '!') {
 	    		if (scanner.peek() == '='){
 	    			c=scanner.next();
-	    			return new Token(TokenClass.NE, line, column);
+	    			return new Token(TokenClass.NE,"!=", line, column);
 	    		}
 	    		return new Token(TokenClass.INVALID, line, column);
 		}
@@ -176,26 +176,29 @@ public class Tokeniser {
         if (c == '<') {
 	    		if (scanner.peek() == '='){
 	    			c=scanner.next();
-	    			return new Token(TokenClass.LE, line, column);
+	    			return new Token(TokenClass.LE,"<=", line, column);
 	    		}
-	    		return new Token(TokenClass.LT, line, column);
+	    		return new Token(TokenClass.LT,"<", line, column);
 		}
         if (c == '>') {
 	    		if (scanner.peek() == '='){
 	    			c=scanner.next();
-	    			return new Token(TokenClass.GE, line, column);
+	    			return new Token(TokenClass.GE,">=", line, column);
 	    		}
-	    		return new Token(TokenClass.GT, line, column);
+	    		return new Token(TokenClass.GT,">", line, column);
 		}
 
         //Dealing with int literal
         if (Character.isDigit(c)) {//checking for int literal
+        	StringBuilder sb = new StringBuilder (); 
+    		sb.append(c);//first letter of string builder
             char peekChar=scanner.peek();
             while (Character.isDigit(peekChar)) {
+            		sb.append(peekChar);
                 c=scanner.next();
                 peekChar=scanner.peek();
             }
-            return new Token(TokenClass.INT_LITERAL, line, column);
+            return new Token(TokenClass.INT_LITERAL,sb.toString(), line, column);
         }
         
         
@@ -224,13 +227,16 @@ public class Tokeniser {
             }
             if (peekChar == '"'){//string literal fine for empty string
             		c=scanner.next();
-                return new Token(TokenClass.STRING_LITERAL, line, column);
+                return new Token(TokenClass.STRING_LITERAL,"", line, column);
             }
+            StringBuilder sb = new StringBuilder (); 
             while (peekChar!='"') {
                 c=scanner.next();
+                sb.append(c);
                 peekChar = scanner.peek();
                 if (c=='\\') {//if potentially start of escape character
                     c=scanner.next();
+                    sb.append(c);//got the slash and letter in the string builder
                     peekChar=scanner.peek();
                     if (!(c=='t' || c=='b' || c=='n'
                             || c=='r' || c=='f' || c=='\''
@@ -246,12 +252,12 @@ public class Tokeniser {
                             || c=='r' || c=='f' || c=='\''
                             || c=='"' || c=='\\' || c=='0') && peekChar=='"') {//
                     	    c=scanner.next();
-                        return new Token(TokenClass.STRING_LITERAL, line, column);
+                        return new Token(TokenClass.STRING_LITERAL, sb.toString(),line, column);
                     }
                 }
                 if (peekChar == '"'){
                 		c=scanner.next();
-                    return new Token(TokenClass.STRING_LITERAL, line, column);
+                    return new Token(TokenClass.STRING_LITERAL, sb.toString(),line, column);
                 }
                 if (peekChar == '\n'){
 	            		error(c, line, column);
@@ -267,12 +273,14 @@ public class Tokeniser {
         //INT_LITERAL,    // ('0'|...|'9')+
         
         if (c == '\''){ //if we have single quote
+        	StringBuilder sb = new StringBuilder (); 
             char peekChar = scanner.peek();
             if (peekChar == '\n'){
 	        		error(c, line, column);
 	            return new Token(TokenClass.INVALID, line, column);
             }
             c=scanner.next();
+            sb.append(c);//this is the first character in the char literal
             peekChar = scanner.peek();
             if (c=='\'') {//if you have '' this is invalid
                 error(c, line, column);
@@ -285,12 +293,13 @@ public class Tokeniser {
 		            return new Token(TokenClass.INVALID, line, column);
                 }
                 c=scanner.next();
+                sb.append(c);//appended the letter after slash
                 peekChar = scanner.peek();
                 if ((c=='t' || c=='b' || c=='n'
                      || c=='r' || c=='f' || c=='\''
                      || c=='"' || c=='\\' || c=='0') && peekChar=='\'') {//checks for a valid escape character else it's invalid
                     c = scanner.next();
-                    return new Token(TokenClass.CHAR_LITERAL, line, column);
+                    return new Token(TokenClass.CHAR_LITERAL,sb.toString(), line, column);
                 }
                 if (c=='\'' && peekChar!='\'') {//means you can't have '\' as a char literal
                 		error(c, line, column);
@@ -304,7 +313,7 @@ public class Tokeniser {
             }
             if (!Character.isDigit(c) && peekChar=='\'') {//if c is a letter and then second single quote
                 c=scanner.next();
-                return new Token(TokenClass.CHAR_LITERAL, line, column);
+                return new Token(TokenClass.CHAR_LITERAL,sb.toString(), line, column);
             }
             
             if (!Character.isDigit(c) && peekChar!='\'') {//checking for multiple characters in single quotes
@@ -316,7 +325,7 @@ public class Tokeniser {
             }
             if (Character.isDigit(c) && peekChar=='\'') {//checking for single integer in single quotes
                 c=scanner.next();
-                return new Token(TokenClass.CHAR_LITERAL, line, column);//
+                return new Token(TokenClass.CHAR_LITERAL,sb.toString(), line, column);//
             }
             if (Character.isDigit(c) && Character.isDigit(peekChar)) {//checking for int literal
                 while (Character.isDigit(c) && peekChar!='\'') {
@@ -358,13 +367,13 @@ public class Tokeniser {
         			//System.out.println(sb.toString());
         			//types
         			if ("void".equals(sb.toString())) {
-        				return new Token(TokenClass.VOID, line, column);
+        				return new Token(TokenClass.VOID,sb.toString(), line, column);
         			}
         			if ("int".equals(sb.toString())) {
-        				return new Token(TokenClass.INT, line, column);
+        				return new Token(TokenClass.INT,sb.toString(), line, column);
         			}
         			if ("char".equals(sb.toString())) {
-        				return new Token(TokenClass.CHAR, line, column);
+        				return new Token(TokenClass.CHAR,sb.toString(), line, column);
         			}
         			// keywords
 //        	        IF,     // "if"
@@ -374,28 +383,24 @@ public class Tokeniser {
 //        	        STRUCT, // "struct"
 //        	        SIZEOF, // "sizeof"
         			if ("if".equals(sb.toString())) {
-        				return new Token(TokenClass.IF, line, column);
+        				return new Token(TokenClass.IF,sb.toString(), line, column);
         			}
         			if ("else".equals(sb.toString())) {
-        				return new Token(TokenClass.ELSE, line, column);
+        				return new Token(TokenClass.ELSE,sb.toString(), line, column);
         			}
         			if ("while".equals(sb.toString())) {
-        				return new Token(TokenClass.WHILE, line, column);
+        				return new Token(TokenClass.WHILE,sb.toString(), line, column);
         			}
         			if ("return".equals(sb.toString())) {
-        				return new Token(TokenClass.RETURN, line, column);
+        				return new Token(TokenClass.RETURN,sb.toString(), line, column);
         			}
         			if ("struct".equals(sb.toString())) {
-        				return new Token(TokenClass.STRUCT, line, column);
+        				return new Token(TokenClass.STRUCT,sb.toString(), line, column);
         			}
         			if ("sizeof".equals(sb.toString())) {
-        				return new Token(TokenClass.SIZEOF, line, column);
+        				return new Token(TokenClass.SIZEOF,sb.toString(), line, column);
         			}
-
-        			
-        			
-        			
-        			return new Token(TokenClass.IDENTIFIER, line, column);
+        			return new Token(TokenClass.IDENTIFIER,sb.toString(), line, column);
         }
 
         // if we reach this point, it means we did not recognise a valid token

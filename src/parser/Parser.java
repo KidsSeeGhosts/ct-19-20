@@ -126,8 +126,14 @@ public class Parser {
 
     private Program parseProgram() {
         parseIncludes();
+        //System.out.println("Parsed includes");
         List<StructTypeDecl> stds = parseStructDeclsRep();
+        //System.out.println("finished parse struct decls rep in program");
+        //System.out.println(token);
         List<VarDecl> vds = parseVarDeclsRep();
+        //System.out.println("Finished parsing var decls rep");
+        //System.out.println(token);
+        //System.out.println("About to do parse fun decls rep");
         List<FunDecl> fds = parseFunDeclsRep();
         expect(TokenClass.EOF);
         return new Program(stds, vds, fds);
@@ -204,11 +210,16 @@ public class Parser {
 
     //public VarDecl(Type type, String varName) {
     private VarDecl parseVarDecls() {
+    		//System.out.println("inside parseVarDecls");
+    		//System.out.println(token.data + " and about to parse type");
         Type type= parseType();
         String varName = token.data;
+        //System.out.println(varName);
         expect(TokenClass.IDENTIFIER);
+        //System.out.println("swallowed the identifier");
         if (accept(TokenClass.SC)) {
         		expect(TokenClass.SC);
+        		//System.out.println("swallowed the semicolon");
         		return new VarDecl(type,varName);
         }
         if (accept(TokenClass.LSBR)) {
@@ -226,6 +237,7 @@ public class Parser {
     
     //Type        ::= BaseType | PointerType | StructType | ArrayType in the abstract grammar
     private Type parseType() { // I put parse staropt inside my parseType
+    	//System.out.println("inside parse type");
     	Token checkToken = lookAhead(1);
 		if (accept(TokenClass.INT)) {
 			if (checkToken.tokenClass==TokenClass.ASTERIX) {
@@ -234,6 +246,8 @@ public class Parser {
 			    return new PointerType(BaseType.INT);
 			}
 			else {
+				//System.out.println("found the int");
+				nextToken();
 				return BaseType.INT;
 			}
 		}
@@ -244,6 +258,7 @@ public class Parser {
 			        return new PointerType(BaseType.CHAR);
 				}
 				else {
+					nextToken();
 					return BaseType.CHAR;
 				}
 		}
@@ -254,6 +269,8 @@ public class Parser {
 			        return new PointerType(BaseType.VOID);
 				}
 				else {
+					//System.out.println("found void and no asterix");
+					nextToken();//swallow the void
 					return BaseType.VOID;
 				}
 		}
@@ -280,6 +297,7 @@ public class Parser {
     	Token checktoken2 = lookAhead(2);
     	Token checktoken3 = lookAhead(3);//for if we have a star
     	Token checktoken4 = lookAhead(4);
+    //	System.out.println("inside of var decls rep");
 	    	while  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass!=TokenClass.ASTERIX) && ((checktoken2.tokenClass== TokenClass.SC) || (checktoken2.tokenClass== TokenClass.LSBR)))
 	    			||//int abc;
 	    			((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass==TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.SC) || (checktoken3.tokenClass== TokenClass.LSBR)))
@@ -289,13 +307,16 @@ public class Parser {
 	    			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass==TokenClass.ASTERIX) && ((checktoken4.tokenClass== TokenClass.SC) || (checktoken4.tokenClass== TokenClass.LSBR)))
 	    			//struct* abc abc;
 	    			){
+	    		//System.out.println("detected a var decl!");
 	    		VarDecl vd = parseVarDecls();
 	    		varDeclsRep.add(vd);
+	    		//System.out.println("FINISHED PARSING THE VAR DECL INSIDE OF VARDECLSREP");
 	    		checktoken1 = lookAhead(1);
 	        	checktoken2 = lookAhead(2);
 	        	checktoken3 = lookAhead(3);//for if we have a star
 	        	checktoken4 = lookAhead(4);
 	    	}
+	    	//System.out.println("finished inside of var decls rep");
 	    	return varDeclsRep;
     }
     
@@ -307,7 +328,11 @@ public class Parser {
     	Token checktoken2 = lookAhead(2);
     	Token checktoken3 = lookAhead(3);//for if we have a star
     	Token checktoken4 = lookAhead(4);
-	    	while  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass!=TokenClass.ASTERIX) && ((checktoken2.tokenClass== TokenClass.LPAR)))
+    	//System.out.println(checktoken1);
+    	//System.out.println(checktoken2);
+    	//System.out.println(checktoken3);
+    	//System.out.println(checktoken4);
+	    	 while  (((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass!=TokenClass.ASTERIX) && ((checktoken2.tokenClass== TokenClass.LPAR)))
 	    			||//int abc;
 	    			((accept(TokenClass.INT,TokenClass.CHAR,TokenClass.VOID)) && (checktoken1.tokenClass==TokenClass.ASTERIX) && ((checktoken3.tokenClass== TokenClass.LPAR)))
 	    			||//int * abc;
@@ -316,6 +341,7 @@ public class Parser {
 	    			((accept(TokenClass.STRUCT)) && (checktoken2.tokenClass==TokenClass.ASTERIX) && ((checktoken4.tokenClass== TokenClass.LPAR)))
 	    			//struct* abc abc;
 	    			){
+	    		//System.out.println("detected a fun decl inside fun decls rep");
 	    		FunDecl fd = parseFunDecls();
 	    		funDeclsRep.add(fd);
 	    		checktoken1 = lookAhead(1);
@@ -330,12 +356,17 @@ public class Parser {
 //    
     //FunDecl(Type type, String name, List<VarDecl> params, Block block) { from abstract grammar
     private FunDecl parseFunDecls() {
+    		//System.out.println("inside parseFunDecls");
     		Type type = parseType();
+    		//System.out.println(type.toString());//parse type seems to work fine
     		String name = token.data;
+    		//System.out.println(token.data);
     		expect(TokenClass.IDENTIFIER);
     		expect(TokenClass.LPAR);
+    		//System.out.println("About to do parse params");
     		List<VarDecl> params = parseParams();
     		expect(TokenClass.RPAR);
+    		//System.out.println("about to parse block");
     		Block block = parseBlock();
     		return new FunDecl(type,name,params,block);
     }
@@ -355,6 +386,7 @@ public class Parser {
 	    		
 	    	}
 	    	else {//empty params
+	    		//System.out.println("found empty params");
 	    		return params;
 	    	}
     }
@@ -364,7 +396,10 @@ public class Parser {
     		List<VarDecl> varDecls=new ArrayList<VarDecl>();
     		List<Stmt> stmts=new ArrayList<Stmt>();
     		expect(TokenClass.LBRA);
+    		//System.out.println("got the left bracket of the block, going to parse var decls rep");
     		varDecls = parseVarDeclsRep();
+    		//System.out.println("BACK INSIDE BLOCK FINISHED PARSING VARDECLSREP");
+    		//System.out.println("About to parse some statements");
     		stmts = parseStmtRep();
     		expect(TokenClass.RBRA);
     		return new Block(varDecls,stmts);
