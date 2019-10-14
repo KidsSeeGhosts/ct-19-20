@@ -399,6 +399,7 @@ public class Parser {
     
     
     private Block parseBlock() {//Block(List<VarDecl> varDecls, List<Stmt> stmts) in abstract grammar
+    		//System.out.println("About to parse block");
     		List<VarDecl> varDecls=new ArrayList<VarDecl>();
     		List<Stmt> stmts=new ArrayList<Stmt>();
     		expect(TokenClass.LBRA);
@@ -437,25 +438,29 @@ public class Parser {
 	    	if (accept(TokenClass.WHILE)) {//public While(Expr expr, Stmt stmt) abstract grammar
 				nextToken();
 				expect(TokenClass.LPAR);//removed an if here i didn't feel was necessary
-		    		Expr expr = parseExp();
-		    		expect(TokenClass.RPAR);
-		    		Stmt stmt = parseStmt();
-		    		return new While(expr,stmt);
+				if (!accept(TokenClass.RPAR)){
+			    		Expr expr = parseExp();
+			    		expect(TokenClass.RPAR);
+			    		Stmt stmt = parseStmt();
+			    		return new While(expr,stmt);
+				}
 		}
 	    	if (accept(TokenClass.IF)) { // If(Expr expr, Stmt stmt, Stmt optStmt) - abstract grammar
 				nextToken();
 				expect(TokenClass.LPAR);
-				Expr expr = parseExp();
-				expect(TokenClass.RPAR);
-				Stmt stmt = 	parseStmt();//getting rid of parseElseStmtOpt here
-				if (accept(TokenClass.ELSE)) {
-					nextToken();
-					Stmt optStmt = parseStmt();
-					return new If(expr,stmt,optStmt);
-				}
-				else {
-					Stmt optStmt=null;//I have no idea if this is valid or if this will have consequences
-					return new If(expr,stmt,optStmt);
+				if (!accept(TokenClass.RPAR)){
+					Expr expr = parseExp();
+					expect(TokenClass.RPAR);
+					Stmt stmt = 	parseStmt();//getting rid of parseElseStmtOpt here
+					if (accept(TokenClass.ELSE)) {
+						nextToken();
+						Stmt optStmt = parseStmt();
+						return new If(expr,stmt,optStmt);
+					}
+					else {
+						Stmt optStmt=null;//I have no idea if this is valid or if this will have consequences
+						return new If(expr,stmt,optStmt);
+					}
 				}
 				
 		}
@@ -488,13 +493,14 @@ public class Parser {
 		    			accept(TokenClass.CHAR_LITERAL) ||
 		    			accept(TokenClass.STRING_LITERAL) ||
 		    			accept(TokenClass.ASTERIX) || accept(TokenClass.SIZEOF)){
-		    			parseExp();
+					//System.out.println("About to parse expression from inside return");
 		    			Expr exprOpt = parseExp();
 		    			expect(TokenClass.SC);
 					return new Return(exprOpt);
 				}
 				else {
 					Expr exprOpt=null;
+					nextToken();
 					return new Return(exprOpt);//not sure if this will work either
 				}
 		}
@@ -504,77 +510,407 @@ public class Parser {
     }
     
     private Expr parseExp() {
-    	if (accept(TokenClass.IDENTIFIER)){//NEED TO CHECK FOR FUNCALL HERE. I think an identifier is a varExpr.
-			Token checktoken=lookAhead(1);
-			if (checktoken.tokenClass== TokenClass.LPAR) {
-				FunCallExpr fc = parseFunCall();
-				Expr expr = parseExpAlt(fc);
+    		//System.out.println("About to do parse exp");
+    		Expr exprAnds = parseExprAnds();
+    		//System.out.println(exprAnds);
+    		Expr expr = parseExprAlt(exprAnds);
+    		return expr;
+    }
+    private Expr parseExprAlt(Expr e) {
+	    	if (accept(TokenClass.OR)) {//LOGICAL OR - TIER 8
+				Op myOp = Op.OR;
+				nextToken();
+				Expr rhs = parseExprAnds();
+				BinOp binOp = new BinOp(myOp,e,rhs);
+				Expr expr = parseExprAlt(binOp);
 				return expr;
-			}
-			else {//identifier then not a left bracket means we have a variable expression
-				VarExpr varexpr = new VarExpr(token.data);
-				expect(TokenClass.IDENTIFIER);
-				Expr expr = parseExpAlt(varexpr);
-				return expr;
-			}
-	}
-		if (accept(TokenClass.MINUS)){//"-" exp exp' UNARY MINUS going to be a BINOP in our abstract grammar
-			IntLiteral zero = new IntLiteral(0);
-     	nextToken();
-     	Expr rhs = parseExp();
-     	BinOp binOp = new BinOp(Op.SUB,zero,rhs);     //public BinOp(Op op, Expr lhs, Expr rhs)
-     	Expr expr = parseExpAlt(binOp);
-     	return expr;
-   }
-		if (accept(TokenClass.LPAR)){//"(" exp ")" expAlt check for type TYPE CAST
-		Token checktoken=lookAhead(1);
-		if ((checktoken.tokenClass== TokenClass.INT) || (checktoken.tokenClass== TokenClass.CHAR) 
-			|| (checktoken.tokenClass== TokenClass.VOID) || (checktoken.tokenClass== TokenClass.STRUCT)){ //if typecast
-			TypeCastExpr typecastexpr = parseTypeCast();
-			Expr expr = parseExpAlt(typecastexpr);
+	    	}
+	    	else {
+	    		return e;
+	    	}
+    }
+    
+    private Expr parseExprAnds() {
+    		//System.out.println("About to do parse exprands");
+    		Expr exprRelOps = parseExprRelOps1();
+    		Expr expr = parseExprAndsAlt(exprRelOps);
+    		return expr;
+    }
+    
+    private Expr parseExprAndsAlt(Expr e) {
+		if (accept(TokenClass.AND)) {//LOGICAL AND - TIER 7
+			Op myOp = Op.AND;
+			nextToken();
+			Expr rhs = parseExprRelOps1();
+			BinOp binOp = new BinOp(myOp,e,rhs);
+			Expr expr = parseExprAndsAlt(binOp);
 			return expr;
 		}
 		else {
+			return e;
+		}
+    }
+    
+    private Expr parseExprRelOps1() {
+    		//System.out.println("About to do parseExprRelOps1");
+    		Expr exprRelOps2 = parseExprRelOps2();
+    		Expr expr = parseExprRelOps1Alt(exprRelOps2);
+    		return expr;
+    }
+    
+    private Expr parseExprRelOps1Alt(Expr e) {//RELATIONAL OPERATORS - TIER 5
+				if (token.tokenClass==TokenClass.EQ) {
+					Op myOp = Op.EQ;
+					nextToken();
+					Expr rhs = parseExprRelOps2();
+					BinOp binOp = new BinOp(myOp,e,rhs);
+					Expr expr = parseExprRelOps1Alt(binOp);
+					return expr;
+				}
+				if (token.tokenClass==TokenClass.NE) {
+					Op myOp = Op.NE;
+					nextToken();
+					Expr rhs = parseExprRelOps2();
+					BinOp binOp = new BinOp(myOp,e,rhs);
+					Expr expr = parseExprRelOps1Alt(binOp);
+					return expr;
+				}
+			    	else {
+			    		return e;
+			    	}
+    }
+    
+    private Expr parseExprRelOps2() {
+    		//System.out.println("About to do parseExprRelOps2");
+    		Expr addsub = parseExprAddSub();
+    		Expr expr = parseExprRelOps2Alt(addsub);
+    		return expr;
+    }
+    
+    private Expr parseExprRelOps2Alt(Expr e) {
+	    	if (token.tokenClass==TokenClass.GT) {
+				Op myOp = Op.GT;
+				nextToken();
+				Expr rhs = parseExprAddSub();
+				BinOp binOp = new BinOp(myOp,e,rhs);
+				Expr expr = parseExprRelOps2Alt(binOp);
+				return expr;
+			}
+	    	if (token.tokenClass==TokenClass.GE) {
+				Op myOp = Op.GE;
+				nextToken();
+				Expr rhs = parseExprAddSub();
+				BinOp binOp = new BinOp(myOp,e,rhs);
+				Expr expr = parseExprRelOps2Alt(binOp);
+				return expr;
+			}
+	    	if (token.tokenClass==TokenClass.LT) {
+				Op myOp = Op.LT;
+				nextToken();
+				Expr rhs = parseExprAddSub();
+				BinOp binOp = new BinOp(myOp,e,rhs);
+				Expr expr = parseExprRelOps2Alt(binOp);
+				return expr;
+			}
+	    	if (token.tokenClass==TokenClass.LE) {
+				Op myOp = Op.LE;
+				nextToken();
+				Expr rhs = parseExprAddSub();
+				BinOp binOp = new BinOp(myOp,e,rhs);
+				Expr expr = parseExprRelOps2Alt(binOp);
+				return expr;
+	    	}
+	    	else {
+	    		return e;
+	    	}
+    }
+    
+    private Expr parseExprAddSub() {
+    		//System.out.println("Inside AddSub");
+    		Expr mdrs = parseMDRS();
+    		Expr expr = parseExprAddSubAlt(mdrs);
+    		return expr;
+    }
+    
+    private Expr parseExprAddSubAlt(Expr e) {
+	    	if (token.tokenClass==TokenClass.PLUS) {
+				Op myOp = Op.ADD;
+				nextToken();
+				Expr rhs = parseMDRS();
+				BinOp binOp = new BinOp(myOp,e,rhs);
+				Expr expr = parseExprAddSubAlt(binOp);
+				return expr;
+			}
+			if (token.tokenClass==TokenClass.MINUS) {
+				Op myOp = Op.SUB;
+				nextToken();
+				Expr rhs = parseMDRS();
+				BinOp binOp = new BinOp(myOp,e,rhs);
+				Expr expr = parseExprAddSubAlt(binOp);
+				return expr;
+			}
+	    	else {
+	    		return e;
+	    	}
+    }
+    
+    private Expr parseMDRS() {
+    		//System.out.println("inside MDRS");
+    		Expr tier2s = parseTier2s();
+    		Expr expr = parseMDRSAlt(tier2s);
+    		return expr;
+    }
+    
+    private Expr parseMDRSAlt(Expr e) {
+	    	if (token.tokenClass==TokenClass.DIV) {
+				Op myOp = Op.DIV;
+				nextToken();
+				Expr rhs = parseTier2s();
+				BinOp binOp = new BinOp(myOp,e,rhs);
+				Expr expr = parseMDRSAlt(binOp);
+				return expr;
+			}
+		if (token.tokenClass==TokenClass.ASTERIX) {
+			Op myOp = Op.MUL;
 			nextToken();
-			Expr notTypeCastExpr = parseExp();
-			expect(TokenClass.RPAR);
-			Expr expr = parseExpAlt(notTypeCastExpr);
+			Expr rhs = parseTier2s();
+			BinOp binOp = new BinOp(myOp,e,rhs);
+			Expr expr = parseMDRSAlt(binOp);
 			return expr;
 		}
-	}
-		if (accept(TokenClass.ASTERIX)){//valueat POINTER INDIRECTION for VALUEATEXPR
-		ValueAtExpr valueat = parseValueAt();
-		Expr expr = parseExpAlt(valueat);
-		return expr;
-	}
-		if (accept(TokenClass.SIZEOF)){//SIZE OF TYPE
-  		 SizeOfExpr sizeofexpr = parseSizeOf();
-  		 Expr expr = parseExpAlt(sizeofexpr);
-  		 return expr;
-	}
-		if (accept(TokenClass.INT_LITERAL)){//pretty much all these are gonna check for array access, field access then operators in order
-		IntLiteral myintliteral = new IntLiteral(Integer.parseInt(token.data));//no clue if this will work
-		nextToken();
-		Expr expr  =parseExpAlt(myintliteral);
-		return expr;
-	}
-		if (accept(TokenClass.CHAR_LITERAL)){
+		if (token.tokenClass==TokenClass.REM) {
+			Op myOp = Op.MOD;
+			nextToken();
+			Expr rhs = parseTier2s();
+			BinOp binOp = new BinOp(myOp,e,rhs);
+			Expr expr = parseMDRSAlt(binOp);
+			return expr;
+		}
+	    	else {
+	    		return e;
+	    	}
+    }
+    
+    private Expr parseTier2s() {
+    		//System.out.println("Inside Tier2s");
+    		Expr tier1s = parseTier1s();
+    		Expr expr = parseTier2sAlt(tier1s);
+    		return expr;
+    }
+    
+    private Expr parseTier2sAlt(Expr e) {
+		if (accept(TokenClass.MINUS)){//"-" exp exp' UNARY MINUS going to be a BINOP in our abstract grammar TIER 2!!!!!!!!!!!
+			IntLiteral zero = new IntLiteral(0);
+		 	nextToken();
+		 	Expr rhs = parseTier1s();
+		 	BinOp binOp = new BinOp(Op.SUB,zero,rhs);     //public BinOp(Op op, Expr lhs, Expr rhs)
+		 	Expr expr = parseTier2sAlt(binOp);
+		 	return expr;
+		}
+		if (accept(TokenClass.ASTERIX)){//valueat POINTER INDIRECTION for VALUEATEXPR TIER 2!!!!!!!!!!!!!!!!!
+			//System.out.println("found the asterix");
+			expect(TokenClass.ASTERIX);
+			Expr expInValueAt = parseTier2s();
+			ValueAtExpr valueat =  new ValueAtExpr(expInValueAt);
+			Expr expr = parseTier2sAlt(valueat);
+			return expr;
+		}
+		if (accept(TokenClass.SIZEOF)){//SIZE OF TYPE TIER 2!!!!!!!!!!!!!!
+		    	expect(TokenClass.SIZEOF);
+		    	expect(TokenClass.LPAR);
+		    Type type =	parseType();
+		    expect(TokenClass.RPAR);
+		    SizeOfExpr mysizeof = new SizeOfExpr(type);
+		    //Expr expaftersizeof = parseTier1s();
+		    Expr expr = parseTier2sAlt(mysizeof);
+			return expr;
+		}
+		if (accept(TokenClass.LPAR)){//"(" exp ")" expAlt check for type TYPE CAST
+			//System.out.println("GOT TO LPAR IN TIERS2");
+			Token checktoken=lookAhead(1);
+			if ((checktoken.tokenClass== TokenClass.INT) || (checktoken.tokenClass== TokenClass.CHAR) 
+				|| (checktoken.tokenClass== TokenClass.VOID) || (checktoken.tokenClass== TokenClass.STRUCT)){ //if typecast TIER 2!!!!!!!!!!!!1
+			    	expect(TokenClass.LPAR);
+			    	Type type = parseType();
+			    	expect(TokenClass.RPAR);
+			    //	System.out.println("GOT THE RIGHT BRACKET IN TYPE CAST");
+			    	Expr myexp = parseExp();
+			    	//System.out.println(myexp);
+			    TypeCastExpr mytypecast =  new TypeCastExpr(type,myexp);
+				Expr expr = parseTier2sAlt(mytypecast);
+				return expr;
+			}
+			else {
+				return e;
+			}
+		}
+		else {
+			return e;
+		}
+		
+    }
+    
+    private Expr parseTier1s() {
+    		//System.out.println("Inside Tier1s");
+    		Expr baselevel = parseBaseLevel();
+    		Expr expr = parseTier1sAlt(baselevel);
+    		return expr;
+    }
+    
+    private Expr parseTier1sAlt(Expr e) {
+			if (accept(TokenClass.DOT)) {//FOR FIELD ACCESS (STRUCT MEMBER ACCESS) abstract is FieldAccessExpr(Expr expr, String string) 
+				nextToken();
+				String string = token.data;
+				expect(TokenClass.IDENTIFIER);
+				FieldAccessExpr fieldaccessexpr = new FieldAccessExpr(e,string);
+				//Expr baselevel = parseBaseLevel();
+				Expr expr = parseTier1sAlt(fieldaccessexpr);
+				return expr;
+		}
+			if (accept(TokenClass.LSBR)) {//FOR ARRAY ACCESS EXPR
+				nextToken();
+				Expr indexexpr = parseExp();
+				expect(TokenClass.RSBR);
+				ArrayAccessExpr arrayaccessexpr= new ArrayAccessExpr(e,indexexpr);
+				//Expr baselevel = parseBaseLevel();
+				Expr expr = parseTier1sAlt(arrayaccessexpr);
+				return expr;
+		}
+	    	else {
+	    		return e;
+	    	}
+			
+			
+    }
+    
+    private Expr parseBaseLevel() {
+    		//System.out.println("Inside Base level");
+        	if (accept(TokenClass.IDENTIFIER)){//NEED TO CHECK FOR FUNCALL HERE. I think an identifier is a varExpr.
+    			Token checktoken=lookAhead(1);
+    			if (checktoken.tokenClass== TokenClass.LPAR) {
+    				FunCallExpr fc = parseFunCall();
+    				return fc;
+    			}
+    			else {//identifier then not a left bracket means we have a variable expression
+    				VarExpr varexpr = new VarExpr(token.data);
+    				expect(TokenClass.IDENTIFIER);
+    				return varexpr;
+    			}
+    	}
+    		if (accept(TokenClass.CHAR_LITERAL)){//CHAR LITERAL
 			ChrLiteral mycharliteral =  new ChrLiteral(token.data.charAt(0));//ChrLiteral(char c) abstract gramamr THIS MIGHT NOT WORK FOR ESCAPE CHARACTERS BUT WE'LL FIND OUT
          	nextToken();
-         	Expr expr = parseExpAlt(mycharliteral);
-         	return expr;
-    }
-		if (accept(TokenClass.STRING_LITERAL)){
+         	return mycharliteral;
+    		}
+	    	if (accept(TokenClass.STRING_LITERAL)){
 			StrLiteral mystringlit = new StrLiteral(token.data);
-		nextToken();
-     Expr expr = parseExpAlt(mystringlit);
-     return expr;
+			nextToken();
+		     return mystringlit;
+		}
+		if (accept(TokenClass.INT_LITERAL)){//pretty much all these are gonna check for array access, field access then operators in order
+			IntLiteral myintliteral = new IntLiteral(Integer.parseInt(token.data));//no clue if this will work
+			//System.out.println(Integer.parseInt(token.data));
+			nextToken();
+			return myintliteral;
+		}
+		if (accept(TokenClass.LPAR)){
+			Token checktoken=lookAhead(1);
+			if (!((checktoken.tokenClass== TokenClass.INT) || (checktoken.tokenClass== TokenClass.CHAR) 
+				|| (checktoken.tokenClass== TokenClass.VOID) || (checktoken.tokenClass== TokenClass.STRUCT))){
+				//System.out.println("no type inside brackets");
+				nextToken();
+				Expr notTypeCastExpr = parseExp();
+				expect(TokenClass.RPAR);
+				return notTypeCastExpr;
+			}
+			else {
+				return null;
+			}
 	}
+		
+		
+		
 		
 		else {
 			return null;
 		}
+    		
+    		
+    		
     }
+    
+//    private Expr parseExp() {
+//    	if (accept(TokenClass.IDENTIFIER)){//NEED TO CHECK FOR FUNCALL HERE. I think an identifier is a varExpr.
+//			Token checktoken=lookAhead(1);
+//			if (checktoken.tokenClass== TokenClass.LPAR) {
+//				FunCallExpr fc = parseFunCall();
+//				Expr expr = parseExpAlt(fc);
+//				return expr;
+//			}
+//			else {//identifier then not a left bracket means we have a variable expression
+//				VarExpr varexpr = new VarExpr(token.data);
+//				expect(TokenClass.IDENTIFIER);
+//				Expr expr = parseExpAlt(varexpr);
+//				return expr;
+//			}
+//	}
+//		if (accept(TokenClass.MINUS)){//"-" exp exp' UNARY MINUS going to be a BINOP in our abstract grammar TIER 2!!!!!!!!!!!
+//			IntLiteral zero = new IntLiteral(0);
+//     	nextToken();
+//     	Expr rhs = parseExp();
+//     	BinOp binOp = new BinOp(Op.SUB,zero,rhs);     //public BinOp(Op op, Expr lhs, Expr rhs)
+//     	Expr expr = parseExpAlt(binOp);
+//     	return expr;
+//   }
+//		if (accept(TokenClass.LPAR)){//"(" exp ")" expAlt check for type TYPE CAST
+//		Token checktoken=lookAhead(1);
+//		if ((checktoken.tokenClass== TokenClass.INT) || (checktoken.tokenClass== TokenClass.CHAR) 
+//			|| (checktoken.tokenClass== TokenClass.VOID) || (checktoken.tokenClass== TokenClass.STRUCT)){ //if typecast TIER 2!!!!!!!!!!!!1
+//			TypeCastExpr typecastexpr = parseTypeCast();
+//			Expr expr = parseExpAlt(typecastexpr);
+//			return expr;
+//		}
+//		else {
+//			nextToken();
+//			Expr notTypeCastExpr = parseExp();
+//			expect(TokenClass.RPAR);
+//			Expr expr = parseExpAlt(notTypeCastExpr);
+//			return expr;
+//		}
+//	}
+//		if (accept(TokenClass.ASTERIX)){//valueat POINTER INDIRECTION for VALUEATEXPR TIER 2!!!!!!!!!!!!!!!!!
+//		ValueAtExpr valueat = parseValueAt();
+//		Expr expr = parseExpAlt(valueat);
+//		return expr;
+//	}
+//		if (accept(TokenClass.SIZEOF)){//SIZE OF TYPE TIER 2!!!!!!!!!!!!!!
+//  		 SizeOfExpr sizeofexpr = parseSizeOf();
+//  		 Expr expr = parseExpAlt(sizeofexpr);
+//  		 return expr;
+//	}
+//		if (accept(TokenClass.INT_LITERAL)){//pretty much all these are gonna check for array access, field access then operators in order
+//		IntLiteral myintliteral = new IntLiteral(Integer.parseInt(token.data));//no clue if this will work
+//		nextToken();
+//		Expr expr  =parseExpAlt(myintliteral);
+//		return expr;
+//	}
+//		if (accept(TokenClass.CHAR_LITERAL)){
+//			ChrLiteral mycharliteral =  new ChrLiteral(token.data.charAt(0));//ChrLiteral(char c) abstract gramamr THIS MIGHT NOT WORK FOR ESCAPE CHARACTERS BUT WE'LL FIND OUT
+//         	nextToken();
+//         	Expr expr = parseExpAlt(mycharliteral);
+//         	return expr;
+//    }
+//		if (accept(TokenClass.STRING_LITERAL)){
+//			StrLiteral mystringlit = new StrLiteral(token.data);
+//		nextToken();
+//     Expr expr = parseExpAlt(mystringlit);
+//     return expr;
+//	}
+//		
+//		else {
+//			return null;
+//		}
+//    }
     
     private FunCallExpr parseFunCall() {
     		//System.out.println("About to parse funcall expr");
@@ -635,139 +971,143 @@ public class Parser {
     return new SizeOfExpr(type);
     }
     
-    private Expr parseExpAlt(Expr e) {
-		if (accept(TokenClass.LSBR)) {//FOR ARRAY ACCESS EXPR
-		nextToken();
-		Expr indexexpr = parseExp();
-		expect(TokenClass.RSBR);
-		ArrayAccessExpr arrayaccessexpr= new ArrayAccessExpr(e,indexexpr);
-		Expr expr = parseExpAlt(arrayaccessexpr);
-		return expr;
-	}
-		if (accept(TokenClass.DOT)) {//FOR FIELD ACCESS (STRUCT MEMBER ACCESS) abstract is FieldAccessExpr(Expr expr, String string) 
-		nextToken();
-		String string = token.data;
-		expect(TokenClass.IDENTIFIER);
-		FieldAccessExpr fieldaccessexpr = new FieldAccessExpr(e,string);
-		Expr expr = parseExpAlt(fieldaccessexpr);
-		return expr;
-	}
-		if (accept(TokenClass.DIV,TokenClass.ASTERIX,TokenClass.REM)) {//FACTOR -  TIER 3
-			if (token.tokenClass==TokenClass.DIV) {
-				Op myOp = Op.DIV;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}
-			if (token.tokenClass==TokenClass.ASTERIX) {
-				Op myOp = Op.MUL;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}
-			if (token.tokenClass==TokenClass.REM) {
-				Op myOp = Op.MOD;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}
-	}
-		if (accept(TokenClass.PLUS,TokenClass.MINUS)) { //Add subtract - TIER 4
-			if (token.tokenClass==TokenClass.PLUS) {
-				Op myOp = Op.ADD;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}
-			if (token.tokenClass==TokenClass.MINUS) {
-				Op myOp = Op.SUB;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}
-			
-	}
-		if (accept(TokenClass.LT,TokenClass.LE,TokenClass.GT,TokenClass.GE)) {//RELATIONAL OPERATORS - TIER 5
-			if (token.tokenClass==TokenClass.LT) {
-				Op myOp = Op.LT;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}
-			if (token.tokenClass==TokenClass.LE) {
-				Op myOp = Op.LE;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}
-			if (token.tokenClass==TokenClass.GT) {
-				Op myOp = Op.GT;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}
-			if (token.tokenClass==TokenClass.GE) {
-				Op myOp = Op.GE;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}
-	}
-		if (accept(TokenClass.EQ,TokenClass.NE)) { //RELATIONAL OPERATORS - TIER 6
-			if (token.tokenClass==TokenClass.EQ) {
-				Op myOp = Op.EQ;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}	
-			if (token.tokenClass==TokenClass.NE) {
-				Op myOp = Op.NE;
-				nextToken();
-				Expr rhs = parseExp();
-				BinOp binOp = new BinOp(myOp,e,rhs);
-				Expr expr = parseExpAlt(binOp);
-				return expr;
-			}
-	}
-		if (accept(TokenClass.AND)) {//LOGICAL AND - TIER 7
-			Op myOp = Op.AND;
-			nextToken();
-			Expr rhs = parseExp();
-			BinOp binOp = new BinOp(myOp,e,rhs);
-			Expr expr = parseExpAlt(binOp);
-			return expr;
-}
-		if (accept(TokenClass.OR)) {//LOGICAL OR - TIER 8
-			Op myOp = Op.OR;
-			nextToken();
-			Expr rhs = parseExp();
-			BinOp binOp = new BinOp(myOp,e,rhs);
-			Expr expr = parseExpAlt(binOp);
-			return expr;
-}
-		else {
-			return e;
-		}
-}
+//    private Expr parseExpAlt(Expr e) {
+//		if (accept(TokenClass.LSBR)) {//FOR ARRAY ACCESS EXPR
+//		nextToken();
+//		Expr indexexpr = parseExp();
+//		expect(TokenClass.RSBR);
+//		ArrayAccessExpr arrayaccessexpr= new ArrayAccessExpr(e,indexexpr);
+//		Expr expr = parseExpAlt(arrayaccessexpr);
+//		return expr;
+//	}
+//		if (accept(TokenClass.DOT)) {//FOR FIELD ACCESS (STRUCT MEMBER ACCESS) abstract is FieldAccessExpr(Expr expr, String string) 
+//		nextToken();
+//		String string = token.data;
+//		expect(TokenClass.IDENTIFIER);
+//		FieldAccessExpr fieldaccessexpr = new FieldAccessExpr(e,string);
+//		Expr expr = parseExpAlt(fieldaccessexpr);
+//		return expr;
+//	}
+//		if (accept(TokenClass.DIV,TokenClass.ASTERIX,TokenClass.REM)) {//FACTOR -  TIER 3
+//			if (token.tokenClass==TokenClass.DIV) {
+//				Op myOp = Op.DIV;
+//				nextToken();
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}
+//			if (token.tokenClass==TokenClass.ASTERIX) {
+//				Op myOp = Op.MUL;
+//				nextToken();//at this point the token is the number
+//				//if (!(accept(TokenClass.GT,TokenClass.LT,TokenClass.GE,TokenClass.LE,
+//		    		//	TokenClass.NE, TokenClass.EQ, TokenClass.PLUS,TokenClass.MINUS,TokenClass.DIV,TokenClass.ASTERIX,TokenClass.REM,TokenClass.OR,TokenClass.AND)){
+//				//	
+//				//}
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}
+//			if (token.tokenClass==TokenClass.REM) {
+//				Op myOp = Op.MOD;
+//				nextToken();
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}
+//	}
+//		if (accept(TokenClass.PLUS,TokenClass.MINUS)) { //Add subtract - TIER 4
+//			if (token.tokenClass==TokenClass.PLUS) {
+//				Op myOp = Op.ADD;
+//				nextToken();
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}
+//			if (token.tokenClass==TokenClass.MINUS) {
+//				Op myOp = Op.SUB;
+//				nextToken();
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}
+//			
+//	}
+//		if (accept(TokenClass.LT,TokenClass.LE,TokenClass.GT,TokenClass.GE)) {//RELATIONAL OPERATORS - TIER 5
+//			if (token.tokenClass==TokenClass.LT) {
+//				Op myOp = Op.LT;
+//				nextToken();
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}
+//			if (token.tokenClass==TokenClass.LE) {
+//				Op myOp = Op.LE;
+//				nextToken();
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}
+//			if (token.tokenClass==TokenClass.GT) {
+//				Op myOp = Op.GT;
+//				nextToken();
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}
+//			if (token.tokenClass==TokenClass.GE) {
+//				Op myOp = Op.GE;
+//				nextToken();
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}
+//	}
+//		if (accept(TokenClass.EQ,TokenClass.NE)) { //RELATIONAL OPERATORS - TIER 6
+//			if (token.tokenClass==TokenClass.EQ) {
+//				Op myOp = Op.EQ;
+//				nextToken();
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}	
+//			if (token.tokenClass==TokenClass.NE) {
+//				Op myOp = Op.NE;
+//				nextToken();
+//				Expr rhs = parseExp();
+//				BinOp binOp = new BinOp(myOp,e,rhs);
+//				Expr expr = parseExpAlt(binOp);
+//				return expr;
+//			}
+//	}
+//		if (accept(TokenClass.AND)) {//LOGICAL AND - TIER 7
+//			Op myOp = Op.AND;
+//			nextToken();
+//			Expr rhs = parseExp();
+//			BinOp binOp = new BinOp(myOp,e,rhs);
+//			Expr expr = parseExpAlt(binOp);
+//			return expr;
+//}
+//		if (accept(TokenClass.OR)) {//LOGICAL OR - TIER 8
+//			Op myOp = Op.OR;
+//			nextToken();
+//			Expr rhs = parseExp();
+//			BinOp binOp = new BinOp(myOp,e,rhs);
+//			Expr expr = parseExpAlt(binOp);
+//			return expr;
+//}
+//		else {
+//			return e;
+//		}
+//}
     
 }

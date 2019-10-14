@@ -221,7 +221,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override   //ValueAtExpr ::= Expr
 	public Void visitValueAtExpr(ValueAtExpr valueAtExpr) {//This Expression() stuff I've been doing is definitely wrong but it's temporary
 		writer.print("ValueAtExpr(");
-		writer.print(valueAtExpr.expr+")");
+		writer.print(valueAtExpr.expr.accept(this)+")");
 		return null;
 	}
 
