@@ -224,11 +224,14 @@ public class Parser {
         		return new VarDecl(type,varName);
         }
         if (accept(TokenClass.LSBR)) {
+        		//System.out.println("got the left square bracket");
 	    		nextToken();
+	    		int myInt = (Integer.parseInt(token.data));
 	    		expect(TokenClass.INT_LITERAL);
 	    		expect(TokenClass.RSBR);
 	    		expect(TokenClass.SC);
-	    		return new VarDecl(type,varName);
+	    		Type type2 = new ArrayType(type,myInt);
+	    		return new VarDecl(type2,varName);
 	    }
         else {
         		return null;
@@ -705,17 +708,17 @@ public class Parser {
     private Expr parseTier2sAlt(Expr e) {
     		//System.out.println("At minus in parseTier2sAlt");
     		//System.out.println(token);
-		if (accept(TokenClass.MINUS)){//"-" exp exp' UNARY MINUS going to be a BINOP in our abstract grammar TIER 2!!!!!!!!!!!
-			//System.out.println("accepted minus");
-			IntLiteral zero = new IntLiteral(0);
-		 	nextToken();
-		 	Expr rhs = parseExp();
-		 	BinOp binOp = new BinOp(Op.SUB,zero,rhs);     //public BinOp(Op op, Expr lhs, Expr rhs)
-		 	//System.out.println("about to do parsetier2salt again");
-		 	//System.out.println(token);
-		 	Expr expr = parseTier2sAlt(binOp);
-		 	return expr;
-		}
+//		if (accept(TokenClass.MINUS)){//"-" exp exp' UNARY MINUS going to be a BINOP in our abstract grammar TIER 2!!!!!!!!!!!
+//			//System.out.println("accepted minus");
+//			IntLiteral zero = new IntLiteral(0);
+//		 	nextToken();
+//		 	Expr rhs = parseExp();
+//		 	BinOp binOp = new BinOp(Op.SUB,zero,rhs);     //public BinOp(Op op, Expr lhs, Expr rhs)
+//		 	//System.out.println("about to do parsetier2salt again");
+//		 	//System.out.println(token);
+//		 	Expr expr = parseTier2sAlt(binOp);
+//		 	return expr;
+//		}
 		if (accept(TokenClass.SIZEOF)){//SIZE OF TYPE TIER 2!!!!!!!!!!!!!!
 		    	expect(TokenClass.SIZEOF);
 		    	expect(TokenClass.LPAR);
@@ -817,6 +820,7 @@ public class Parser {
 			IntLiteral myintliteral = new IntLiteral(Integer.parseInt(token.data));//no clue if this will work
 			//System.out.println(Integer.parseInt(token.data));
 			nextToken();
+			//System.out.println("got int literal in baselevel");
 			return myintliteral;
 		}
 		if (accept(TokenClass.LPAR)){
@@ -840,6 +844,21 @@ public class Parser {
 		ValueAtExpr valueat =  new ValueAtExpr(expInValueAt);
 		return valueat;
 	}
+		if (accept(TokenClass.MINUS)){//"-" exp exp' UNARY MINUS going to be a BINOP in our abstract grammar TIER 2!!!!!!!!!!!
+			//System.out.println("accepted minus");
+			IntLiteral zero = new IntLiteral(0);
+		 	nextToken();
+		 	Expr rhs = parseExp();
+		 	BinOp binOp = new BinOp(Op.SUB,zero,rhs);     //public BinOp(Op op, Expr lhs, Expr rhs)
+		 	//System.out.println("about to do parsetier2salt again");
+		 	//System.out.println(token);
+		 	//Expr expr = parseTier2sAlt(binOp);
+		 	return binOp;
+		}
+		
+		
+		
+		
 		
 		else {
 			return null;

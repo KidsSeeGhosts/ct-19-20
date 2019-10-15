@@ -106,9 +106,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
         // to complete ...
     		writer.print("StructTypeDecl(");
     		String delimiter = "";
-    		writer.print("StructType(");
-    		writer.print(st.structType.string);
-    		writer.print(")");
+    		st.structType.accept(this);
     		writer.print(",");
     		for (VarDecl vd : st.varDecls) {//copying varDecls thing from program printer given
                 writer.print(delimiter);
@@ -116,7 +114,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
                 vd.accept(this);
             }
     		writer.print(")");//last bracket for the entire struct type decl
-    		writer.flush(); //flushing the stream because i think youre meant to do that after dealing with a list of types
+    		//writer.flush(); //flushing the stream because i think youre meant to do that after dealing with a list of types
         return null;
     }
 
@@ -130,7 +128,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 
 	@Override
 	public Void visitStructType(StructType structType) {
-		writer.print("StuctType(");
+		writer.print("StructType(");
 		writer.print(structType.string);
 		writer.print(")");
 		return null;
@@ -139,10 +137,9 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override
 	public Void visitArrayType(ArrayType arrayType) {
 		writer.print("ArrayType(");
-		writer.print("Type(");
-		writer.print(arrayType.type+"),");
-		writer.print("int(");
-		writer.print(arrayType.i+")");
+		arrayType.type.accept(this);
+		writer.print(",");
+		writer.print(arrayType.i);
 		writer.print(")");
 		return null;
 	}
