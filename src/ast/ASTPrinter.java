@@ -33,7 +33,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
     public Void visitFunDecl(FunDecl fd) {
         writer.print("FunDecl(");
         fd.type.accept(this);
-        writer.print(","+fd.name+",");
+        writer.print(", "+fd.name+", ");
         String delimiter = "";
         if (!fd.vardecls.isEmpty()){
 	        	for (VarDecl vd : fd.vardecls) {
@@ -79,7 +79,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
     public Void visitVarDecl(VarDecl vd){
         writer.print("VarDecl(");
         vd.type.accept(this);
-        writer.print(","+vd.varName);
+        writer.print(", "+vd.varName);
         writer.print(")");
         return null;
     }
@@ -107,7 +107,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
     		writer.print("StructTypeDecl(");
     		String delimiter = "";
     		writer.print("StructType(");
-    		writer.print(st.structType); //not sure if I'm meant to accept this
+    		writer.print(st.structType.string);
     		writer.print(")");
     		writer.print(",");
     		for (VarDecl vd : st.varDecls) {//copying varDecls thing from program printer given
@@ -123,7 +123,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override
 	public Void visitPointerType(PointerType pt) {
 		writer.print("PointerType(");
-		writer.print(pt.type);
+		pt.type.accept(this);
 		writer.print(")");
 		return null;
 	}
@@ -131,9 +131,8 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override
 	public Void visitStructType(StructType structType) {
 		writer.print("StuctType(");
-		writer.print("String(");
 		writer.print(structType.string);
-		writer.print("))");
+		writer.print(")");
 		return null;
 	}
 
@@ -180,7 +179,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 		for (Expr exp : funCallExpr.expressions){//this is probably not how you print the expressions list
 			writer.print(",");
 			writer.print(delimiter);
-            delimiter = ",";
+            //delimiter = ",";
             exp.accept(this);
 		}
 		writer.print(")");
@@ -191,8 +190,8 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	public Void visitBinOp(BinOp binOp) {
 		writer.print("BinOp(");
 		binOp.lhs.accept(this);
-		writer.print(",");
-		writer.print(binOp.op+",");
+		writer.print(", ");
+		writer.print(binOp.op+", ");
 		binOp.rhs.accept(this);
 		writer.print(")");
 		return null;
@@ -201,17 +200,19 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override //ArrayAccessExpr ::= Expr Expr
 	public Void visitArrayAccessExpr(ArrayAccessExpr arrayAccessExpr) {
 		writer.print("ArrayAccessExpr(");
-		writer.print(arrayAccessExpr.expr1+",");
-		writer.print(arrayAccessExpr.expr2+")");
+		arrayAccessExpr.expr1.accept(this);
+		writer.print(",");
+		arrayAccessExpr.expr2.accept(this);
+		writer.print(")");
 		return null;
 	}
 	
 	//FieldAccessExpr ::= Expr String
 	@Override
 	public Void visitFieldAccessExpr(FieldAccessExpr fieldAccessExpr) {
-		writer.print("FieldAccessExpr");
-		writer.print("Expression(");
-		writer.print(fieldAccessExpr.expr+"),String(");
+		writer.print("FieldAccessExpr(");
+	    fieldAccessExpr.expr.accept(this);
+	    writer.print(",");
 		//fieldAccessExpr.type.accept(this); see a line of code like this I need to figure it out. I think it's what would automatically gives the types before the bracket
 		writer.print(fieldAccessExpr.string+")");
 		writer.print(")");
@@ -221,7 +222,8 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override   //ValueAtExpr ::= Expr
 	public Void visitValueAtExpr(ValueAtExpr valueAtExpr) {//This Expression() stuff I've been doing is definitely wrong but it's temporary
 		writer.print("ValueAtExpr(");
-		writer.print(valueAtExpr.expr.accept(this)+")");
+		valueAtExpr.expr.accept(this);
+		writer.print(")");
 		return null;
 	}
 
@@ -236,7 +238,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 
 	@Override
 	public Void visitTypeCastExpr(TypeCastExpr typeCastExpr) {//doing this one a different way so i can see how it comes out for testing reasons
-		writer.print("TypeCastExpr(");
+		writer.print("TypecastExpr(");
 		typeCastExpr.type.accept(this);
 		writer.print(",");
 		typeCastExpr.expr.accept(this);

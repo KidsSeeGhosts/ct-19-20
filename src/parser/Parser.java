@@ -172,6 +172,7 @@ public class Parser {
     
     private StructType parseStructType() {
         expect(TokenClass.STRUCT);
+        //System.out.println(token.data);
         String string = token.data;//gets the identifier name
         expect(TokenClass.IDENTIFIER);
         return new StructType(string);
@@ -278,7 +279,7 @@ public class Parser {
 			StructType st = parseStructType();
 			if (accept(TokenClass.ASTERIX)) {
 				nextToken();
-		        expect(TokenClass.ASTERIX);
+		        //expect(TokenClass.ASTERIX);
 		        return new PointerType(st);
 			}
 			else {
@@ -657,11 +658,14 @@ public class Parser {
     private Expr parseMDRS() {
     		//System.out.println("inside MDRS");
     		Expr tier2s = parseTier2s();
+    		//System.out.println(tier2s);
     		Expr expr = parseMDRSAlt(tier2s);
     		return expr;
     }
     
     private Expr parseMDRSAlt(Expr e) {
+    		//System.out.println(e);
+    		//System.out.println(token);
 	    	if (token.tokenClass==TokenClass.DIV) {
 				Op myOp = Op.DIV;
 				nextToken();
@@ -699,21 +703,18 @@ public class Parser {
     }
     
     private Expr parseTier2sAlt(Expr e) {
+    		//System.out.println("At minus in parseTier2sAlt");
+    		//System.out.println(token);
 		if (accept(TokenClass.MINUS)){//"-" exp exp' UNARY MINUS going to be a BINOP in our abstract grammar TIER 2!!!!!!!!!!!
+			//System.out.println("accepted minus");
 			IntLiteral zero = new IntLiteral(0);
 		 	nextToken();
-		 	Expr rhs = parseTier1s();
+		 	Expr rhs = parseExp();
 		 	BinOp binOp = new BinOp(Op.SUB,zero,rhs);     //public BinOp(Op op, Expr lhs, Expr rhs)
+		 	//System.out.println("about to do parsetier2salt again");
+		 	//System.out.println(token);
 		 	Expr expr = parseTier2sAlt(binOp);
 		 	return expr;
-		}
-		if (accept(TokenClass.ASTERIX)){//valueat POINTER INDIRECTION for VALUEATEXPR TIER 2!!!!!!!!!!!!!!!!!
-			//System.out.println("found the asterix");
-			expect(TokenClass.ASTERIX);
-			Expr expInValueAt = parseTier2s();
-			ValueAtExpr valueat =  new ValueAtExpr(expInValueAt);
-			Expr expr = parseTier2sAlt(valueat);
-			return expr;
 		}
 		if (accept(TokenClass.SIZEOF)){//SIZE OF TYPE TIER 2!!!!!!!!!!!!!!
 		    	expect(TokenClass.SIZEOF);
@@ -769,12 +770,17 @@ public class Parser {
 		}
 			if (accept(TokenClass.LSBR)) {//FOR ARRAY ACCESS EXPR
 				nextToken();
-				Expr indexexpr = parseExp();
-				expect(TokenClass.RSBR);
-				ArrayAccessExpr arrayaccessexpr= new ArrayAccessExpr(e,indexexpr);
-				//Expr baselevel = parseBaseLevel();
-				Expr expr = parseTier1sAlt(arrayaccessexpr);
-				return expr;
+				if (!accept(TokenClass.RSBR)) {
+					Expr indexexpr = parseExp();
+					expect(TokenClass.RSBR);
+					ArrayAccessExpr arrayaccessexpr= new ArrayAccessExpr(e,indexexpr);
+					//Expr baselevel = parseBaseLevel();
+					Expr expr = parseTier1sAlt(arrayaccessexpr);
+					return expr;
+				}
+				else {
+					return e;
+				}
 		}
 	    	else {
 	    		return e;
@@ -827,9 +833,13 @@ public class Parser {
 				return null;
 			}
 	}
-		
-		
-		
+		if (accept(TokenClass.ASTERIX)){//valueat POINTER INDIRECTION for VALUEATEXPR TIER 2!!!!!!!!!!!!!!!!!
+//		//System.out.println("found the asterix");
+		expect(TokenClass.ASTERIX);
+		Expr expInValueAt = parseExp();
+		ValueAtExpr valueat =  new ValueAtExpr(expInValueAt);
+		return valueat;
+	}
 		
 		else {
 			return null;
@@ -947,29 +957,29 @@ public class Parser {
 	    	return funArgsOpt;
     }
     
-    private TypeCastExpr parseTypeCast() { //public TypeCastExpr(Type type, Expr expr) {
-	    	expect(TokenClass.LPAR);
-	    	Type type = parseType();
-	    	expect(TokenClass.RPAR);
-	    	Expr expr = parseExp();
-	    	return new TypeCastExpr(type,expr);
-    }
+//    private TypeCastExpr parseTypeCast() { //public TypeCastExpr(Type type, Expr expr) {
+//	    	expect(TokenClass.LPAR);
+//	    	Type type = parseType();
+//	    	expect(TokenClass.RPAR);
+//	    	Expr expr = parseExp();
+//	    	return new TypeCastExpr(type,expr);
+//    }
     
     //abstract grammar is ValueAtExpr(Expr expr)
-    private ValueAtExpr parseValueAt() {
-		expect(TokenClass.ASTERIX);
-		Expr expr = parseExp();
-		return new ValueAtExpr(expr);
-    }
+//    private ValueAtExpr parseValueAt() {
+//		expect(TokenClass.ASTERIX);
+//		Expr expr = parseExp();
+//		return new ValueAtExpr(expr);
+//    }
     
-    
-    private SizeOfExpr parseSizeOf() {
-    	expect(TokenClass.SIZEOF);
-    	expect(TokenClass.LPAR);
-    Type type =	parseType();
-    expect(TokenClass.RPAR);
-    return new SizeOfExpr(type);
-    }
+//    
+//    private SizeOfExpr parseSizeOf() {
+//    	expect(TokenClass.SIZEOF);
+//    	expect(TokenClass.LPAR);
+//    Type type =	parseType();
+//    expect(TokenClass.RPAR);
+//    return new SizeOfExpr(type);
+//    }
     
 //    private Expr parseExpAlt(Expr e) {
 //		if (accept(TokenClass.LSBR)) {//FOR ARRAY ACCESS EXPR
