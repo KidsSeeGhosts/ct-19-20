@@ -2,6 +2,9 @@ package sem;
 
 import java.util.ArrayList;
 
+import ast.BaseType;
+import ast.FunDecl;
+
 public class SemanticAnalyzer {
 	
 	public int analyze(ast.Program prog) {

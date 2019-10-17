@@ -6,6 +6,7 @@ public class FunCallExpr extends Expr{
 	
 	public final String string;
 	public final List<Expr> expressions;
+	public FunDecl funDecl;//to be filled in by name analyser
 	
 	public FunCallExpr(String string, List<Expr> expressions) {
 		this.string=string;
