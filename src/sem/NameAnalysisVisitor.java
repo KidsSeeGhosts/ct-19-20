@@ -36,6 +36,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		Scope oldScope = scope;
 		Scope newScope = new Scope(oldScope);
 		scope=newScope;//change our current scope to the new scope
+		scope.put(new StructSymbol(st));//inside of this scope put the struct symbol in so none of the var decls can have same name as the struct
 		for (VarDecl vd : st.varDecls) {//copying varDecls thing from program printer given
             vd.accept(this);
         }
@@ -148,6 +149,32 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			error("This variable was already declared inside the current scope");
 		}
 		else {//allows us to declare this variable inside the current scope
+			if(vd.type instanceof StructType) {//struct x y; x must have been defined as a struct
+				StructType mystructtype = (StructType) vd.type;
+				Symbol mystructsymbol = scope.lookup(mystructtype.string);
+				if (mystructsymbol!=null) {// symbol was found
+					if(mystructsymbol.isStruct) {//struct symbol was found
+						StructSymbol definitelystructsymbol = (StructSymbol) mystructsymbol;
+						//now need to check that in struct x y, y wasn't declared inside of the struct x
+						for (VarDecl currentvardecl : definitelystructsymbol.std.varDecls) {
+							if (currentvardecl.varName.equals(vd.varName)) {
+								error("Can't do variable declaration struct x y, y was found declared in the struct x");
+								return null;
+							}
+						}
+						scope.put(new VarSymbol(vd));//struct x y, x was found to be a struct and y was not found already declared in that struct
+						return null;
+					}
+					else {
+						error("In struct x y; x was found but it was not a struct");
+						return null;
+					}
+				}
+				else {// symbol not found
+					error("StructType variable can't be declared because in struct x y; x not found");
+					return null;
+				}
+			}
 			scope.put(new VarSymbol(vd));
 			//System.out.println("Var Added to the symbol table");
 		}
