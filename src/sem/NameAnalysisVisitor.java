@@ -36,7 +36,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		Scope oldScope = scope;
 		Scope newScope = new Scope(oldScope);
 		scope=newScope;//change our current scope to the new scope
-		scope.put(new StructSymbol(st));//inside of this scope put the struct symbol in so none of the var decls can have same name as the struct
+		//scope.put(new StructSymbol(st));//inside of this scope put the struct symbol in so none of the var decls can have same name as the struct
 		for (VarDecl vd : st.varDecls) {//copying varDecls thing from program printer given
             vd.accept(this);
         }
