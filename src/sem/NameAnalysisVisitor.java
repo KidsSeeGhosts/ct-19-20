@@ -73,14 +73,21 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		//end of name analysis
 		//open a new scope before doing the params
         if (!fd.vardecls.isEmpty()){//if vardecls isn't empty visit them
+        		//System.out.println("vardecls not empty in fun decl");
 	        	Scope oldScope = scope;
 	    		Scope newScope = new Scope(oldScope);
 	    		scope=newScope;//change our current scope to the new scope
 	        	for (VarDecl vd : fd.vardecls) {
 	                vd.accept(this);
 	        }
-	        fd.block.accept(this);
-	        scope = oldScope;
+	        	//end of params, starting the block
+	            for (VarDecl vd : fd.block.varDecls) {
+	                vd.accept(this);
+	            }
+	            for (Stmt stmt : fd.block.stmts) {
+	                stmt.accept(this);
+	            }
+	            scope=oldScope;
 	        return null;
         }
         fd.block.accept(this);
@@ -149,10 +156,11 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitVarExpr(VarExpr v) {
-		//System.out.println("visit var expr");
+		//System.out.println("inside visit var expr");
 		Symbol vs = scope.lookup(v.name);//looks in current then outer scope.
 		//System.out.println(vs);
 		if (vs == null) {
+			//System.out.println(v.name);
 			error("VarExpr not found");
 		}
 //		else if(vs.isVar==false){ Don't think I need to worry about this until type check analysis
@@ -208,6 +216,9 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		else {   // everything is fine , record var decl
 			funCallExpr.funDecl = ((ProcSymbol) fcs).fd;//the variable stores its declaration
 		}
+		for (Expr exp : funCallExpr.expressions){//this is probably not how you print the expressions list
+            exp.accept(this);
+		}
 		return null;
 	}
 
@@ -227,7 +238,32 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitFieldAccessExpr(FieldAccessExpr fieldAccessExpr) {
-	    fieldAccessExpr.expr.accept(this);
+	    //fieldAccessExpr.expr.accept(this);
+		//System.out.println(fieldAccessExpr.expr instanceof VarExpr);
+		if (fieldAccessExpr.expr instanceof VarExpr) {
+			VarExpr myvarexpr = (VarExpr) fieldAccessExpr.expr;
+			//System.out.println(myvarexpr.name);
+			Symbol potentialstructsymbol = scope.lookup(myvarexpr.name);
+			if (potentialstructsymbol==null){
+				error("Field access expression x.y, x was not defined anywhere");
+				return null;
+			}
+			if (potentialstructsymbol.isStruct) {
+				//System.out.println("it was a struct");
+				StructSymbol mystructsymbol = (StructSymbol) potentialstructsymbol;
+				//System.out.println(mystructsymbol.std.varDecls.contains(VarDecl));
+				for (VarDecl vd : mystructsymbol.std.varDecls) {
+					if (vd.varName.equals(fieldAccessExpr.string)) {
+						//System.out.println("found it!");
+						return null;
+					}
+				}
+				error("Field Access Expression x.y, y was not defined in the struct x.");
+				return null;
+			}
+			error("Field access expression x.y, x was not defined as a struct");
+			return null;
+		}
 		return null;
 	}
 
