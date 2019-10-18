@@ -150,7 +150,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		}
 		else {//allows us to declare this variable inside the current scope
 			Symbol checksymbol = scope.lookup(vd.varName);//check the global scope because can't have a variable with same name as something from global scope
-			if (checksymbol==null){//nothing with same name in global scope
+			if (checksymbol==null || checksymbol.isStruct || checksymbol.isVar){//nothing with same name in global scope
 			if(vd.type instanceof StructType) {//struct x y; x must have been defined as a struct
 				StructType mystructtype = (StructType) vd.type;
 				Symbol mystructsymbol = scope.lookup(mystructtype.string);
@@ -191,18 +191,32 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitVarExpr(VarExpr v) {
+		//System.out.println();
 		//System.out.println("inside visit var expr");
 		Symbol vs = scope.lookup(v.name);//looks in current then outer scope.
 		//System.out.println(vs);
 		if (vs == null) {
 			//System.out.println(v.name);
-			error("VarExpr not found");
+			error("Var has not been declared before");
 		}
 //		else if(vs.isVar==false){ Don't think I need to worry about this until type check analysis
 //			 error("Got a symbol but it's not a variable");
 //		}
 		else {   // everything is fine , record var decl
+			if (vs instanceof VarSymbol){
 			v.vd = ((VarSymbol) vs).vd;//the variable stores its declaration
+			//System.out.println(v.vd);
+			}
+			if (vs instanceof StructSymbol) {
+				System.out.println("found struct symbol");
+				VarDecl myvd = new VarDecl(((StructSymbol) vs).std.structType,v.name);
+				v.vd = myvd;
+			}
+			if (vs instanceof ProcSymbol) {
+				VarDecl myvd = new VarDecl(((ProcSymbol) vs).fd.type,v.name);
+				v.vd = myvd;
+			}
+			
 		}
 		return null;
 	}
@@ -273,7 +287,6 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitFieldAccessExpr(FieldAccessExpr fieldAccessExpr) {
-	    //fieldAccessExpr.expr.accept(this);
 		//System.out.println(fieldAccessExpr.expr instanceof VarExpr);
 		if (fieldAccessExpr.expr instanceof VarExpr) {
 			VarExpr myvarexpr = (VarExpr) fieldAccessExpr.expr;
@@ -281,6 +294,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			Symbol potentialstructsymbol = scope.lookup(myvarexpr.name);
 			if (potentialstructsymbol==null){
 				error("Field access expression x.y, x was not defined anywhere");
+				fieldAccessExpr.expr.accept(this);
 				return null;
 			}
 			if (potentialstructsymbol.isStruct) {
@@ -290,13 +304,16 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 				for (VarDecl vd : mystructsymbol.std.varDecls) {
 					if (vd.varName.equals(fieldAccessExpr.string)) {
 						//System.out.println("found it!");
+						fieldAccessExpr.expr.accept(this);
 						return null;
 					}
 				}
 				error("Field Access Expression x.y, y was not defined in the struct x.");
+				fieldAccessExpr.expr.accept(this);
 				return null;
 			}
 			error("Field access expression x.y, x was not defined as a struct");
+			fieldAccessExpr.expr.accept(this);
 			return null;
 		}
 		return null;
