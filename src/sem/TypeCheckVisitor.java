@@ -177,6 +177,9 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitFunCallExpr(FunCallExpr funCallExpr) {
+		if(funCallExpr.funDecl==null) {//function hasn't been declared before so we don't do any type checking
+			return null;
+		}
 		funCallExpr.type = funCallExpr.funDecl.type;
 		//System.out.println("reached fun call expr");
 		List<VarDecl> functionargs = funCallExpr.funDecl.vardecls;	
@@ -391,21 +394,28 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	public Type visitAssign(Assign assign) {
 //		assign.expr1.accept(this);
 //		assign.expr2.accept(this);
-		Type lhstype = assign.expr1.accept(this);
-		Type rhstype = assign.expr2.accept(this);
-		if ((!(lhstype instanceof ArrayType))&&(lhstype!=BaseType.VOID)) {
-			if (rhstype==lhstype) {//no error
-				return null;
+		if((assign.expr1 instanceof VarExpr)||(assign.expr1 instanceof FieldAccessExpr)||(assign.expr1 instanceof ArrayAccessExpr)||(assign.expr1 instanceof ValueAtExpr)) {//part 6 of cw2
+			Type lhstype = assign.expr1.accept(this);
+			Type rhstype = assign.expr2.accept(this);
+			if ((!(lhstype instanceof ArrayType))&&(lhstype!=BaseType.VOID)) {
+				if (rhstype==lhstype) {//no error
+					return null;
+				}
+				else {
+					error("in assign lhs and rhs weren't same type");
+					return null;
+				}
 			}
 			else {
-				error("in assign lhs and rhs weren't same type");
+				error("lhs in assign is an array type or void");
 				return null;
 			}
 		}
 		else {
-			error("lhs in assign is an array type or void");
+			error("left hand side of assign is not varxpr, fieldaccessexpr, arrayaccessexpr or valueatexpr");
 			return null;
 		}
+
 	}
 
 	@Override

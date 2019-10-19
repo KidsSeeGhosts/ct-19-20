@@ -63,6 +63,18 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 	public Void visitFunDecl(FunDecl fd) {
 		fd.type.accept(this);//accept the type
         Symbol s = scope.lookupCurrent(fd.name);
+        if (scope.outer==null) {
+			if (s != null) {//it was found and we are in global socpe
+				if (s.isStruct) {
+					scope.put(new ProcSymbol(fd));
+					return null;
+				}
+				else {
+					error("Fun decl in global scope already been declared");
+					return null;
+				}
+			}
+		}
         //System.out.println(fd.name);
 		if (s != null) {//it was found
 			error("This function was already declared inside the current scope");
@@ -144,6 +156,18 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 	public Void visitVarDecl(VarDecl vd) {
 		//System.out.println(vd.varName);
 		Symbol s = scope.lookupCurrent(vd.varName);
+		if (scope.outer==null) {
+			if (s != null) {//it was found and we are in global socpe
+				if (s.isStruct) {
+					scope.put(new VarSymbol(vd));
+					return null;
+				}
+				else {
+					error("Var decl in global scope already been declared");
+					return null;
+				}
+			}
+		}
 		if (s != null) {//it was found
 			//System.out.println(s.isVar);
 			error("This variable was already declared inside the current scope");
@@ -156,14 +180,14 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 				Symbol mystructsymbol = scope.lookup(mystructtype.string);
 				if (mystructsymbol!=null) {// symbol was found
 					if(mystructsymbol.isStruct) {//struct symbol was found
-						StructSymbol definitelystructsymbol = (StructSymbol) mystructsymbol;
+//						StructSymbol definitelystructsymbol = (StructSymbol) mystructsymbol;
 						//now need to check that in struct x y, y wasn't declared inside of the struct x
-						for (VarDecl currentvardecl : definitelystructsymbol.std.varDecls) {
-							if (currentvardecl.varName.equals(vd.varName)) {
-								error("Can't do variable declaration struct x y, y was found declared in the struct x");
-								return null;
-							}
-						}
+//						for (VarDecl currentvardecl : definitelystructsymbol.std.varDecls) {
+//							if (currentvardecl.varName.equals(vd.varName)) {
+//								error("Can't do variable declaration struct x y, y was found declared in the struct x");
+//								return null;
+//							}
+//						}
 						scope.put(new VarSymbol(vd));//struct x y, x was found to be a struct and y was not found already declared in that struct
 						return null;
 					}
