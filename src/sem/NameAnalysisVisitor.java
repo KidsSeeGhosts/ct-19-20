@@ -114,7 +114,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		scope.put(new ProcSymbol((new FunDecl(voidstar,"mcmalloc",mcmallocvardecls, emptyblock))));
 		
 		List<VarDecl> printSvardecls = new ArrayList<VarDecl>();
-		Type charstar = new PointerType(BaseType.CHAR);
+		PointerType charstar = new PointerType(BaseType.CHAR);
 		printSvardecls.add(new VarDecl(charstar,"s"));
 		scope.put(new ProcSymbol((new FunDecl(BaseType.VOID,"print_s",printSvardecls, emptyblock))));
 		

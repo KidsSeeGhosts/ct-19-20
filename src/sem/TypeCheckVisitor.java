@@ -1,161 +1,421 @@
 package sem;
 
+import java.util.List;
+
 import ast.*;
 
 public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitBaseType(BaseType bt) {
-		// To be completed...
-		return null;
+		return bt;
 	}
 
 	@Override
 	public Type visitStructTypeDecl(StructTypeDecl st) {
-		// To be completed...
+		return st.structType.accept(this);
+		
+	}
+
+	@Override
+	public Type visitBlock(Block b) {//no analysiss just visiting
+		//System.out.println("inside block");
+		for (VarDecl vd : b.varDecls) {
+            vd.accept(this);
+        }
+        for (Stmt stmt : b.stmts) {
+        		if (stmt instanceof Return) {
+        		}
+            stmt.accept(this);
+        }
 		return null;
 	}
 
 	@Override
-	public Type visitBlock(Block b) {
-		// To be completed...
+	public Type visitFunDecl(FunDecl fd) {//no analysis happening here just visiting as normal. this is because there's no premise in typing rule.
+		Type fundecltype = fd.type.accept(this);
+        if (!fd.vardecls.isEmpty()){
+	        	for (VarDecl vd : fd.vardecls) {
+	                vd.accept(this);
+	            }
+	        	
+		        	for (VarDecl vd : fd.block.varDecls) {
+		                vd.accept(this);
+		            }
+		            for (Stmt stmt : fd.block.stmts) {
+		            		if (stmt instanceof Return) {
+		            			Return myreturn  = (Return) stmt;
+		            			if (myreturn.optExpr!=null) {//something comes after return
+		            				if (fundecltype.equals(BaseType.VOID)) {
+		            						error("return exp even though void function");
+		            				}
+		            				else {//fundecl isn't of type void
+		            					Type myreturntype = myreturn.optExpr.accept(this);
+		            					if (fundecltype!=myreturntype) {
+		            						error("function type isn't same as return type");
+		            					}
+		            				}
+		            			}
+		            			else {//nothing comes after return
+		            				if (!(fundecltype.equals(BaseType.VOID))) {
+		            					error("Not returning anything when function is NOT void");
+		            				}
+		            			}
+		            			
+		            		}
+		                stmt.accept(this);
+		            }
+		        	
+		        	
+	        	
+	        	
+	        	
+	            //fd.block.accept(this);
+	            return null;
+        }
+        //in a fun decl with no params
+		for (VarDecl vd : fd.block.varDecls) {
+            vd.accept(this);
+        }
+        for (Stmt stmt : fd.block.stmts) {
+        		if (stmt instanceof Return) {
+        			Return myreturn  = (Return) stmt;
+        			if (myreturn.optExpr!=null) {//something comes after return
+        				if (fundecltype.equals(BaseType.VOID)) {
+        						error("return exp even though void function");
+        				}
+        				else {//fundecl isn't of type void
+        					Type myreturntype = myreturn.optExpr.accept(this);
+        					if (fundecltype!=myreturntype) {
+        						error("function type isn't same as return type");
+        					}
+        				}
+        			}
+        			else {//nothing comes after return
+        				if (!(fundecltype.equals(BaseType.VOID))) {
+        					error("Not returning anything when function is NOT void");
+        				}
+        			}
+        			
+        		}
+            stmt.accept(this);
+        }
+        
+        
+        //fd.block.accept(this);
+		return null;
+	}
+
+
+	@Override
+	public Type visitProgram(Program p) {//no analysis here
+		for (StructTypeDecl std : p.structTypeDecls) {
+            std.accept(this);
+        }
+        for (VarDecl vd : p.varDecls) {
+            vd.accept(this);
+        }
+        for (FunDecl fd : p.funDecls) {
+            fd.accept(this);
+        }
 		return null;
 	}
 
 	@Override
-	public Type visitFunDecl(FunDecl p) {
-		// To be completed...
-		return null;
-	}
-
-
-	@Override
-	public Type visitProgram(Program p) {
-		// To be completed...
-		return null;
-	}
-
-	@Override
-	public Type visitVarDecl(VarDecl vd) {
-		// To be completed...
-		return null;
+	public Type visitVarDecl(VarDecl vd) {//just checking the type is not void otherwise not returning anything
+		if (vd.type==BaseType.VOID) {
+			error("var decl type was void");
+		}
+		return vd.type;
 	}
 
 	@Override
 	public Type visitVarExpr(VarExpr v) {
-		// To be completed...
-		return null;
+		//System.out.println(v.vd);
+		if (v.vd!=null) {//if variable has been declared we can return the variable's type
+			v.type = v.vd.type;
+			return v.type;
+		}
+		else {
+			error("Var Expression type check doesn't work because var doesn't have a declaration");
+			return null;
+		}
 	}
 
 	@Override
 	public Type visitPointerType(PointerType pt) {
-		// TODO Auto-generated method stub
-		return null;
+		return pt;
 	}
 
 	@Override
 	public Type visitStructType(StructType structType) {
-		// TODO Auto-generated method stub
-		return null;
+		return structType;
 	}
 
 	@Override
 	public Type visitArrayType(ArrayType arrayType) {
-		// TODO Auto-generated method stub
-		return null;
+		return arrayType;
 	}
 
 	@Override
 	public Type visitIntLiteral(IntLiteral intLiteral) {
-		// TODO Auto-generated method stub
-		return null;
+		intLiteral.type = BaseType.INT;
+		return intLiteral.type;
 	}
 
 	@Override
 	public Type visitStrLiteral(StrLiteral strLiteral) {
-		// TODO Auto-generated method stub
-		return null;
+		strLiteral.type = new ArrayType(BaseType.CHAR,strLiteral.string.length()+1);
+		return strLiteral.type;
 	}
 
 	@Override
 	public Type visitChrLiteral(ChrLiteral chrLiteral) {
-		// TODO Auto-generated method stub
-		return null;
+		chrLiteral.type = BaseType.CHAR;
+		return chrLiteral.type;
 	}
 
 	@Override
 	public Type visitFunCallExpr(FunCallExpr funCallExpr) {
-		// TODO Auto-generated method stub
-		return null;
+		funCallExpr.type = funCallExpr.funDecl.type;
+		//System.out.println("reached fun call expr");
+		List<VarDecl> functionargs = funCallExpr.funDecl.vardecls;	
+		//System.out.println(functionargs);
+		int index = 0;
+		//System.out.println(functionargs.size());
+		if (funCallExpr.expressions.size()==functionargs.size()){//checking there's the right number of args
+			for (Expr exp : funCallExpr.expressions){//these are the arguments
+				//VarExpr currentvarexp = (VarExpr) exp;//decent beta version but the problem is we don't know they're all gonna be var expressions
+				Type currentVarType = exp.accept(this);//this will return a type
+				Type currentargType = functionargs.get(index).type;
+				if ((currentVarType instanceof PointerType) && (currentargType instanceof PointerType)) {//deals with pointers another layer of typing required
+					PointerType mypointervar = (PointerType) currentVarType.accept(this);
+					PointerType mypointerarg = (PointerType) currentargType.accept(this);
+					if (mypointervar.type.equals(mypointerarg.type)) {
+						return null;
+					}
+				}
+				//System.out.println(currentVarType);
+				
+				//System.out.println(currentVarType.equals(currentargType));
+				if (currentVarType==null) {
+					error("error in fun call expression, got an argument that's null");
+					return null;
+				}
+				if (!(currentVarType.equals(currentargType))) {//if the type of argument is not equal
+					error("Argument in fun call doesn't have right type");
+					//System.out.println(currentVarType);
+					return null;
+				}
+				index++;
+			}
+			//System.out.println("finished the args");
+			return funCallExpr.type;//all the argument types were fine
+		}
+		else {
+			error("funcall doesn't have the right number of arguments");
+			return null;
+		}
 	}
 
 	@Override
 	public Type visitBinOp(BinOp binOp) {
-		// TODO Auto-generated method stub
+		Type lhstype = binOp.lhs.accept(this);
+		Type rhstype = binOp.rhs.accept(this);
+		if ((binOp.op==Op.ADD)||(binOp.op==Op.SUB)||(binOp.op==Op.MUL)||(binOp.op==Op.DIV)||(binOp.op==Op.MOD)||(binOp.op==Op.OR)||(binOp.op==Op.AND)||(binOp.op==Op.GT)||(binOp.op==Op.GE)||(binOp.op==Op.LT)||(binOp.op==Op.LE)) {
+			if(lhstype==BaseType.INT && rhstype==BaseType.INT) {
+				binOp.type=BaseType.INT;
+				return BaseType.INT;
+			}
+			else {
+				error("binop1 lhs or rhs or both was not an integer");
+				return null;
+			}
+		}
+		if ((binOp.op==Op.NE)||(binOp.op==Op.EQ)) {
+			if ((!(lhstype instanceof ArrayType))&&(!(lhstype instanceof StructType))&&(lhstype!=BaseType.VOID)) {
+				if (rhstype==lhstype) {//think we're just checking here if they are the same type
+					binOp.type=BaseType.INT;
+					return BaseType.INT;
+				}
+				else {
+					error("binOp with NE or EQ, lhs and rhs had different types");
+					return null;
+				}
+			}
+			else {
+				error("lhs of binOp was an arrayType,StructType or void when operator was NE or EQ");
+				return null;
+			}
+		}
 		return null;
 	}
 
 	@Override
 	public Type visitArrayAccessExpr(ArrayAccessExpr arrayAccessExpr) {
-		// TODO Auto-generated method stub
-		return null;
+		Type exp1Type = arrayAccessExpr.expr1.accept(this);
+		Type exp2Type = arrayAccessExpr.expr2.accept(this);
+		if ((exp1Type instanceof ArrayType)||(exp1Type instanceof PointerType)) {
+			if (exp1Type instanceof ArrayType) {//it's an array type
+				ArrayType myarraytype = (ArrayType) exp1Type;
+				if(exp2Type.equals(BaseType.INT)) {
+					arrayAccessExpr.type = myarraytype.type;
+					return arrayAccessExpr.type;
+				}
+				else {
+					error("Array access e1 is arraytype but e2 is not int");
+					return null;
+				}
+			}
+			else {//it's a pointer type
+				PointerType mypointertype = (PointerType) exp1Type;
+				if(exp2Type.equals(BaseType.INT)) {
+					arrayAccessExpr.type = mypointertype.type;
+					return arrayAccessExpr.type;
+				}
+				else {
+					error("Array access e1 is pointer type but e2 is not int");
+					return null;
+				}
+			}
+		}
+		else {
+			error("exp1 in array access is not array type or pointer type in type analysis");
+			return null;
+		}
 	}
 
 	@Override
 	public Type visitFieldAccessExpr(FieldAccessExpr fieldAccessExpr) {
-		// TODO Auto-generated method stub
-		return null;
+		//System.out.println("inside visit field access expr");
+		Type expType = fieldAccessExpr.expr.accept(this);
+		if (expType instanceof StructType) {
+			return expType;
+		}
+		else {
+			error("field access expression is not struct type");
+			return null;
+		}
 	}
 
 	@Override
 	public Type visitValueAtExpr(ValueAtExpr valueAtExpr) {
-		// TODO Auto-generated method stub
-		return null;
+		Type valueattype = valueAtExpr.expr.accept(this);
+		//System.out.println(valueattype);
+		if (valueattype instanceof PointerType) {
+			PointerType mypt = (PointerType) valueattype;
+			return mypt.type;
+		}
+		else {
+			error("expression in value at not a pointer type");
+			return null;
+		}
 	}
 
 	@Override
 	public Type visitSizeOfExpr(SizeOfExpr sizeOfExpr) {
-		// TODO Auto-generated method stub
-		return null;
+		sizeOfExpr.type.accept(this);//testing what this does
+		return BaseType.INT;
 	}
 
 	@Override
 	public Type visitTypeCastExpr(TypeCastExpr typeCastExpr) {
-		// TODO Auto-generated method stub
-		return null;
+		//System.out.println(typeCastExpr.expr.accept(this));
+		Type expType = typeCastExpr.expr.accept(this);
+		Type mypointertype = typeCastExpr.type;
+		if (mypointertype instanceof PointerType) {
+			PointerType pointer = (PointerType) mypointertype;
+			if (expType instanceof ArrayType) {//typecast 1
+				ArrayType myarraytype = (ArrayType) expType;
+				if (pointer.type==myarraytype.type) {
+					return mypointertype;
+				}
+				else {
+					error("In type cast, pointer and array exp don't have same elem type");
+					return null;
+				}
+			}
+			if (expType instanceof PointerType) {
+				//PointerType exppointer = (PointerType) expType;
+				return pointer.type;
+			}
+			else {
+				error("pointer type found in type cast exp but exp after wasn't pointertype or arraytype");
+				return null;
+			}
+		}
+		if (mypointertype.equals(BaseType.INT)){
+				if (expType.equals(BaseType.CHAR)) {
+					return BaseType.INT;
+				}
+			error("in typecastexpr got int pointer but not char");	
+			return null;
+		}
+		else {
+			error("in typecastexpr (type) exp, type is not a pointer or inttype");
+			return null;
+		}
 	}
 
 	@Override
 	public Type visitWhile(While myWhile) {
-		// TODO Auto-generated method stub
-		return null;
+		Type whiletype = myWhile.expr.accept(this);
+		if (whiletype.equals(BaseType.INT)) {//no error
+			myWhile.stmt.accept(this);
+			return null;
+		}
+		else{
+			error("in while, expression is not an int");
+			myWhile.stmt.accept(this);
+			return null;
+		}
 	}
 
 	@Override
 	public Type visitIf(If myIf) {
-		// TODO Auto-generated method stub
-		return null;
+		Type myiftype = myIf.expr.accept(this);
+		if (myiftype.equals(BaseType.INT)){
+			myIf.stmt.accept(this);
+			if (myIf.optStmt!=null){
+				myIf.optStmt.accept(this);
+			}
+			return null;
+		}
+		else {
+			error("if(exp), exp isn't int type");
+			return null;
+		}
 	}
 
 	@Override
 	public Type visitAssign(Assign assign) {
-		// TODO Auto-generated method stub
-		return null;
+//		assign.expr1.accept(this);
+//		assign.expr2.accept(this);
+		Type lhstype = assign.expr1.accept(this);
+		Type rhstype = assign.expr2.accept(this);
+		if ((!(lhstype instanceof ArrayType))&&(lhstype!=BaseType.VOID)) {
+			if (rhstype==lhstype) {//no error
+				return null;
+			}
+			else {
+				error("in assign lhs and rhs weren't same type");
+				return null;
+			}
+		}
+		else {
+			error("lhs in assign is an array type or void");
+			return null;
+		}
 	}
 
 	@Override
-	public Type visitExprStmt(ExprStmt exprStmt) {
-		// TODO Auto-generated method stub
+	public Type visitExprStmt(ExprStmt exprStmt) {//no analysis for expr stmt
+		exprStmt.expr.accept(this);
 		return null;
 	}
 
 	@Override
 	public Type visitReturn(Return myReturn) {
-		// TODO Auto-generated method stub
 		return null;
 	}
-
-	// To be completed...
-
-
 }
