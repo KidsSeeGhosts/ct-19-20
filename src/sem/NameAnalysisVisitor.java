@@ -171,10 +171,11 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		if (s != null) {//it was found
 			//System.out.println(s.isVar);
 			error("This variable was already declared inside the current scope");
+			return null;
 		}
 		else {//allows us to declare this variable inside the current scope
-			Symbol checksymbol = scope.lookup(vd.varName);//check the global scope because can't have a variable with same name as something from global scope
-			if (checksymbol==null || checksymbol.isStruct || checksymbol.isVar){//nothing with same name in global scope
+//			Symbol checksymbol = scope.lookup(vd.varName);//check the global scope because can't have a variable with same name as something from global scope
+//			if (checksymbol==null || checksymbol.isStruct || checksymbol.isVar){//nothing with same name in global scope
 			if(vd.type instanceof StructType) {//struct x y; x must have been defined as a struct
 				StructType mystructtype = (StructType) vd.type;
 				Symbol mystructsymbol = scope.lookup(mystructtype.string);
@@ -203,14 +204,13 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			}
 			scope.put(new VarSymbol(vd));
 			return null;
-			}
-			else {
-				error("Variable has same name as something in global scope");
-				return null;
-			}
+//			}
+//			else {
+//				error("Variable has same name as something in global scope");
+//				return null;
+//			}
 			//System.out.println("Var Added to the symbol table");
 		}
-		return null;
 	}
 
 	@Override
