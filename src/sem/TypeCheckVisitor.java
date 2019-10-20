@@ -43,6 +43,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		                vd.accept(this);
 		            }
 		            for (Stmt stmt : fd.block.stmts) {
+		            		if (stmt instanceof Block) {
+		            			Block myblock = (Block) stmt;
+		            			visitBlockInFunDecl(fd,fundecltype,myblock);
+		            		}
 		            		if (stmt instanceof Return) {
 		            			Return myreturn  = (Return) stmt;
 		            			if (myreturn.optExpr!=null) {//something comes after return
@@ -71,7 +75,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		            			While mywhile = (While) stmt;
 		            			visitWhileBlockInFunDecl(fd,fundecltype,mywhile);
 		            		}
-		            		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))){
+		            		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))&&(!(stmt instanceof Block))){
 		            			stmt.accept(this);
 		            		}
 		            }
@@ -88,6 +92,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
             vd.accept(this);
         }
         for (Stmt stmt : fd.block.stmts) {
+	        	if (stmt instanceof Block) {
+	    			Block myblock = (Block) stmt;
+	    			visitBlockInFunDecl(fd,fundecltype,myblock);
+	    		}
         		if (stmt instanceof Return) {
         			Return myreturn  = (Return) stmt;
         			if (myreturn.optExpr!=null) {//something comes after return
@@ -109,13 +117,14 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
         		}
         		if (stmt instanceof If) {
         			If myif = (If) stmt;
+        			//System.out.println(myif.optStmt);
         			visitIfBlockInFunDecl(fd,fundecltype,myif);
         		}
         		if (stmt instanceof While) {
         			While mywhile = (While) stmt;
         			visitWhileBlockInFunDecl(fd,fundecltype,mywhile);
         		}
-        		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))){
+        		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))&&(!(stmt instanceof Block))){
             stmt.accept(this);
         		}
         }
@@ -150,7 +159,6 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitVarExpr(VarExpr v) {
-		//System.out.println(v.vd);
 		if (v.vd!=null) {//if variable has been declared we can return the variable's type
 			v.type = v.vd.type;
 			return v.type;
@@ -316,7 +324,13 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		//System.out.println("inside visit field access expr");
 		Type expType = fieldAccessExpr.expr.accept(this);
 		if (expType instanceof StructType) {
-			return expType;
+			StructType mystructtype = (StructType) expType;
+			for (VarDecl vd : mystructtype.std.varDecls) {
+				if (vd.varName.equals(fieldAccessExpr.string)) {
+					return vd.type;
+				}
+			}
+			return null;
 		}
 		else {
 			error("field access expression is not struct type");
@@ -399,6 +413,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitIf(If myIf) {
+		//System.out.println("inside visit if");
 		Type myiftype = myIf.expr.accept(this);
 		if (myiftype.equals(BaseType.INT)){
 			myIf.stmt.accept(this);
@@ -457,7 +472,15 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	}
 	
 	public void visitIfBlockInFunDecl(FunDecl fd, Type fundeclType, If myif) {
+		//System.out.println(myif.optStmt);
 		Type myiftype = myif.expr.accept(this);
+		if(myiftype==null) {//function hasn't been declared before so we don't do any type checking
+			//doesn't make a difference
+//			for (Expr exp : funCallExpr.expressions) {
+//				exp.accept(this);
+//			}
+			return;
+		}
 		if (!(myiftype.equals(BaseType.INT))){
 			error("if doesn't have int type");
 		}
@@ -468,6 +491,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	            vd.accept(this);
 	        }
 	        for (Stmt stmt : myifblock.stmts) {
+		        	if (stmt instanceof Block) {
+	        			Block myblock = (Block) stmt;
+	        			visitBlockInFunDecl(fd,fundeclType,myblock);
+	        		}
 	        		if (stmt instanceof Return) {
 	        			Return myreturn  = (Return) stmt;
 	        			if (myreturn.optExpr!=null) {//something comes after return
@@ -496,10 +523,14 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	        			While mynewwhile = (While) stmt;
 	        			visitWhileBlockInFunDecl(fd,fundeclType,mynewwhile);
 	        		}
-	        		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))){
+	        		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))&&(!(stmt instanceof Block))){
 	            stmt.accept(this);
 	        		}
 	        }
+		}
+		if (myif.optStmt instanceof If) {
+    			If mynewif = (If) myif.optStmt;
+    			visitIfBlockInFunDecl(fd,fundeclType,mynewif);
 		}
 		if (myif.optStmt instanceof Block) {
 			//System.out.println("inside else block of if");
@@ -508,6 +539,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	            vd.accept(this);
 	        }
 	        for (Stmt stmt : myifblock.stmts) {
+		        	if (stmt instanceof Block) {
+	        			Block myblock = (Block) stmt;
+	        			visitBlockInFunDecl(fd,fundeclType,myblock);
+	        		}
 	        		if (stmt instanceof Return) {
 	        			Return myreturn  = (Return) stmt;
 	        			if (myreturn.optExpr!=null) {//something comes after return
@@ -536,7 +571,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	        			While mynewwhile = (While) stmt;
 	        			visitWhileBlockInFunDecl(fd,fundeclType,mynewwhile);
 	        		}
-	        		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))){
+	        		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))&&(!(stmt instanceof Block))){
 	            stmt.accept(this);
 	        		}
 	        }
@@ -545,6 +580,13 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	
 	public void visitWhileBlockInFunDecl(FunDecl fd, Type fundeclType, While mywhile) {
 		Type whiletype = mywhile.expr.accept(this);
+		if(whiletype==null) {//function hasn't been declared before so we don't do any type checking
+			//doesn't make a difference
+//			for (Expr exp : funCallExpr.expressions) {
+//				exp.accept(this);
+//			}
+			return;
+		}
 		if (!(whiletype.equals(BaseType.INT))) {//no error
 			error("in while, expression is not an int");
 		}
@@ -555,6 +597,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	            vd.accept(this);
 	        }
 	        for (Stmt stmt : mywhileblock.stmts) {
+		        	if (stmt instanceof Block) {
+	        			Block myblock = (Block) stmt;
+	        			visitBlockInFunDecl(fd,fundeclType,myblock);
+	        		}
 	        		if (stmt instanceof Return) {
 	        			Return myreturn  = (Return) stmt;
 	        			if (myreturn.optExpr!=null) {//something comes after return
@@ -583,14 +629,55 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	        			While mynewwhile = (While) stmt;
 	        			visitWhileBlockInFunDecl(fd,fundeclType,mynewwhile);
 	        		}
-	        		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))){
+	        		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))&&(!(stmt instanceof Block))){
 	            stmt.accept(this);
 	        		}
 	        }
 		}
 	}
 	
-	
+	void visitBlockInFunDecl(FunDecl fd, Type fundeclType, Block myblock) {
+		for (VarDecl vd : myblock.varDecls) {
+            vd.accept(this);
+        }
+        for (Stmt stmt : myblock.stmts) {
+	        	if (stmt instanceof Block) {
+        			Block mynewblock = (Block) stmt;
+        			visitBlockInFunDecl(fd,fundeclType,mynewblock);
+        		}
+        		if (stmt instanceof Return) {
+        			Return myreturn  = (Return) stmt;
+        			if (myreturn.optExpr!=null) {//something comes after return
+        				if (fundeclType.equals(BaseType.VOID)) {
+        						error("return exp even though void function");
+        				}
+        				else {//fundecl isn't of type void
+        					Type myreturntype = myreturn.optExpr.accept(this);
+        					if (fundeclType!=myreturntype) {
+        						error("function type isn't same as return type");
+        					}
+        				}
+        			}
+        			else {//nothing comes after return
+        				if (!(fundeclType.equals(BaseType.VOID))) {
+        					error("Not returning anything when function is NOT void");
+        				}
+        			}
+        			
+        		}
+        		if (stmt instanceof If) {
+        			If mynewif = (If) stmt;
+        			visitIfBlockInFunDecl(fd,fundeclType,mynewif);
+        		}
+        		if (stmt instanceof While) {
+        			While mynewwhile = (While) stmt;
+        			visitWhileBlockInFunDecl(fd,fundeclType,mynewwhile);
+        		}
+        		else if ((!(stmt instanceof If))&&(!(stmt instanceof While))&&(!(stmt instanceof Block))){
+            stmt.accept(this);
+        		}
+        }
+	}
 	
 	
 }

@@ -38,6 +38,12 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		scope=newScope;//change our current scope to the new scope
 		//scope.put(new StructSymbol(st));//inside of this scope put the struct symbol in so none of the var decls can have same name as the struct
 		for (VarDecl vd : st.varDecls) {//copying varDecls thing from program printer given
+			if (vd.type instanceof StructType){
+				StructType thestructtype = (StructType) vd.type;
+				if(thestructtype.string.equals(st.structType.string)) {
+					error("can't declare struct inside of struct with same name!");
+				}
+			}
             vd.accept(this);
         }
 		scope=oldScope;
@@ -159,7 +165,11 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		if (scope.outer==null) {
 			if (s != null) {//it was found and we are in global socpe
 				if (s.isStruct) {
-					scope.put(new VarSymbol(vd));
+					StructSymbol thestructsymbol = (StructSymbol) s;
+					StructType mynewstructtype = new StructType(vd.varName);
+					StructTypeDecl mystd = new StructTypeDecl(mynewstructtype,thestructsymbol.std.varDecls);
+					mynewstructtype.std = mystd;
+					scope.put(new StructSymbol(mystd));//struct x y, x was found to be a struct and y was not found already declared in that struct
 					return null;
 				}
 				else {
@@ -181,15 +191,11 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 				Symbol mystructsymbol = scope.lookup(mystructtype.string);
 				if (mystructsymbol!=null) {// symbol was found
 					if(mystructsymbol.isStruct) {//struct symbol was found
-//						StructSymbol definitelystructsymbol = (StructSymbol) mystructsymbol;
-						//now need to check that in struct x y, y wasn't declared inside of the struct x
-//						for (VarDecl currentvardecl : definitelystructsymbol.std.varDecls) {
-//							if (currentvardecl.varName.equals(vd.varName)) {
-//								error("Can't do variable declaration struct x y, y was found declared in the struct x");
-//								return null;
-//							}
-//						}
-						scope.put(new VarSymbol(vd));//struct x y, x was found to be a struct and y was not found already declared in that struct
+						StructSymbol thestructsymbol = (StructSymbol) mystructsymbol;
+						StructType mynewstructtype = new StructType(vd.varName);
+						StructTypeDecl mystd = new StructTypeDecl(mynewstructtype,thestructsymbol.std.varDecls);
+						mynewstructtype.std = mystd;
+						scope.put(new StructSymbol(mystd));//struct x y, x was found to be a struct and y was not found already declared in that struct
 						return null;
 					}
 					else {
@@ -232,7 +238,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			//System.out.println(v.vd);
 			}
 			if (vs instanceof StructSymbol) {
-				System.out.println("found struct symbol");
+				//System.out.println("found struct symbol");
 				VarDecl myvd = new VarDecl(((StructSymbol) vs).std.structType,v.name);
 				v.vd = myvd;
 			}
