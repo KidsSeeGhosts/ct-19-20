@@ -51,11 +51,35 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		            			Return myreturn  = (Return) stmt;
 		            			if (myreturn.optExpr!=null) {//something comes after return
 		            				if (fundecltype.equals(BaseType.VOID)) {
-		            						error("return exp even though void function");
-		            				}
+		        						Type myreturntype = myreturn.optExpr.accept(this);
+		        						if(myreturntype instanceof BaseType) {
+		        							if(!(myreturntype.equals(BaseType.VOID))) {
+		        								error("return exp where exp is not void");
+		        							}
+		        						}
+		        						else if (myreturntype==null) {//this mean we're returning a void and the function is void so it's fine
+		        						//error("return exp where exp doesn't give any type");
+		        						}
+		        				}
 		            				else {//fundecl isn't of type void
 		            					Type myreturntype = myreturn.optExpr.accept(this);
-		            					if (fundecltype!=myreturntype) {
+		            					if (myreturntype instanceof StructType) {
+		            						//StructType myreturnstruct = (StructType) myreturntype;
+		            						//System.out.println(myreturnstruct);
+		            						if (!(fundecltype instanceof StructType)) {
+		            							error("returning a struct type when the function is not meant to return a struct type");
+		            						}
+		            					}
+		            					if (myreturntype instanceof PointerType) {
+		            						//StructType myreturnstruct = (StructType) myreturntype;
+		            						//System.out.println(myreturnstruct);
+		            						if (!(fundecltype instanceof PointerType)) {
+		            							error("returning a struct type when the function is not meant to return a struct type");
+		            						}
+		            					}
+		            					if (fundecltype!=myreturntype && (!(myreturntype instanceof StructType))&& (!(myreturntype instanceof PointerType))) {
+		            						//System.out.println(fundecltype);
+		            						//System.out.println(myreturntype);
 		            						error("function type isn't same as return type");
 		            					}
 		            				}
@@ -100,11 +124,35 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
         			Return myreturn  = (Return) stmt;
         			if (myreturn.optExpr!=null) {//something comes after return
         				if (fundecltype.equals(BaseType.VOID)) {
-        						error("return exp even though void function");
+        						Type myreturntype = myreturn.optExpr.accept(this);
+        						if(myreturntype instanceof BaseType) {
+        							if(!(myreturntype.equals(BaseType.VOID))) {
+        								error("return exp where exp is not void");
+        							}
+        						}
+        						else if (myreturntype==null) {//this mean we're returning a void and the function is void so it's fine
+        						//error("return exp where exp doesn't give any type");
+        						}
         				}
         				else {//fundecl isn't of type void
         					Type myreturntype = myreturn.optExpr.accept(this);
-        					if (fundecltype!=myreturntype) {
+        					if (myreturntype instanceof StructType) {
+        						//StructType myreturnstruct = (StructType) myreturntype;
+        						//System.out.println(myreturnstruct);
+        						if (!(fundecltype instanceof StructType)) {
+        							error("returning a struct type when the function is not meant to return a struct type");
+        						}
+        					}
+        					if (myreturntype instanceof PointerType) {
+        						//StructType myreturnstruct = (StructType) myreturntype;
+        						//System.out.println(myreturnstruct);
+        						if (!(fundecltype instanceof PointerType)) {
+        							error("returning a struct type when the function is not meant to return a struct type");
+        						}
+        					}
+        					if (fundecltype!=myreturntype && (!(myreturntype instanceof StructType))&& (!(myreturntype instanceof PointerType))) {
+        						//System.out.println(fundecltype);
+        						//System.out.println(myreturntype);
         						error("function type isn't same as return type");
         					}
         				}
@@ -324,7 +372,18 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		//System.out.println("inside visit field access expr");
 		Type expType = fieldAccessExpr.expr.accept(this);
 		if (expType instanceof StructType) {
-			StructType mystructtype = (StructType) expType;
+			StructType mystructtype = (StructType) fieldAccessExpr.type;
+			//System.out.println(mystructtype.std);
+			for (VarDecl vd : mystructtype.std.varDecls) {
+				if (vd.varName.equals(fieldAccessExpr.string)) {
+					return vd.type;
+				}
+			}
+			return null;
+		}
+		else if (fieldAccessExpr.type instanceof StructType){
+			StructType mystructtype = (StructType) fieldAccessExpr.type;
+			//System.out.println(mystructtype.std.varDecls);
 			for (VarDecl vd : mystructtype.std.varDecls) {
 				if (vd.varName.equals(fieldAccessExpr.string)) {
 					return vd.type;
@@ -444,6 +503,8 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 					return null;
 				}
 				else {
+//					System.out.println(lhstype);
+//					System.out.println(rhstype);
 					error("in assign lhs and rhs weren't same type");
 					return null;
 				}
@@ -499,11 +560,35 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	        			Return myreturn  = (Return) stmt;
 	        			if (myreturn.optExpr!=null) {//something comes after return
 	        				if (fundeclType.equals(BaseType.VOID)) {
-	        						error("return exp even though void function");
-	        				}
+        						Type myreturntype = myreturn.optExpr.accept(this);
+        						if(myreturntype instanceof BaseType) {
+        							if(!(myreturntype.equals(BaseType.VOID))) {
+        								error("return exp where exp is not void");
+        							}
+        						}
+        						else if (myreturntype==null) {//this mean we're returning a void and the function is void so it's fine
+        						//error("return exp where exp doesn't give any type");
+        						}
+        				}
 	        				else {//fundecl isn't of type void
 	        					Type myreturntype = myreturn.optExpr.accept(this);
-	        					if (fundeclType!=myreturntype) {
+	        					if (myreturntype instanceof StructType) {
+	        						//StructType myreturnstruct = (StructType) myreturntype;
+	        						//System.out.println(myreturnstruct);
+	        						if (!(fundeclType instanceof StructType)) {
+	        							error("returning a struct type when the function is not meant to return a struct type");
+	        						}
+	        					}
+	        					if (myreturntype instanceof PointerType) {
+	        						//StructType myreturnstruct = (StructType) myreturntype;
+	        						//System.out.println(myreturnstruct);
+	        						if (!(fundeclType instanceof PointerType)) {
+	        							error("returning a struct type when the function is not meant to return a struct type");
+	        						}
+	        					}
+	        					if (fundeclType!=myreturntype && (!(myreturntype instanceof StructType))&& (!(myreturntype instanceof PointerType))) {
+	        						//System.out.println(fundeclType);
+	        						//System.out.println(myreturntype);
 	        						error("function type isn't same as return type");
 	        					}
 	        				}
@@ -547,11 +632,35 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	        			Return myreturn  = (Return) stmt;
 	        			if (myreturn.optExpr!=null) {//something comes after return
 	        				if (fundeclType.equals(BaseType.VOID)) {
-	        						error("return exp even though void function");
-	        				}
+        						Type myreturntype = myreturn.optExpr.accept(this);
+        						if(myreturntype instanceof BaseType) {
+        							if(!(myreturntype.equals(BaseType.VOID))) {
+        								error("return exp where exp is not void");
+        							}
+        						}
+        						else if (myreturntype==null) {//this mean we're returning a void and the function is void so it's fine
+        						//error("return exp where exp doesn't give any type");
+        						}
+        				}
 	        				else {//fundecl isn't of type void
 	        					Type myreturntype = myreturn.optExpr.accept(this);
-	        					if (fundeclType!=myreturntype) {
+	        					if (myreturntype instanceof StructType) {
+	        						//StructType myreturnstruct = (StructType) myreturntype;
+	        						//System.out.println(myreturnstruct);
+	        						if (!(fundeclType instanceof StructType)) {
+	        							error("returning a struct type when the function is not meant to return a struct type");
+	        						}
+	        					}
+	        					if (myreturntype instanceof PointerType) {
+	        						//StructType myreturnstruct = (StructType) myreturntype;
+	        						//System.out.println(myreturnstruct);
+	        						if (!(fundeclType instanceof PointerType)) {
+	        							error("returning a struct type when the function is not meant to return a struct type");
+	        						}
+	        					}
+	        					if (fundeclType!=myreturntype && (!(myreturntype instanceof StructType))&& (!(myreturntype instanceof PointerType))) {
+	        						//System.out.println(fundeclType);
+	        						//System.out.println(myreturntype);
 	        						error("function type isn't same as return type");
 	        					}
 	        				}
@@ -605,11 +714,35 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	        			Return myreturn  = (Return) stmt;
 	        			if (myreturn.optExpr!=null) {//something comes after return
 	        				if (fundeclType.equals(BaseType.VOID)) {
-	        						error("return exp even though void function");
-	        				}
+        						Type myreturntype = myreturn.optExpr.accept(this);
+        						if(myreturntype instanceof BaseType) {
+        							if(!(myreturntype.equals(BaseType.VOID))) {
+        								error("return exp where exp is not void");
+        							}
+        						}
+        						else if (myreturntype==null) {//this mean we're returning a void and the function is void so it's fine
+        						//error("return exp where exp doesn't give any type");
+        						}
+        				}
 	        				else {//fundecl isn't of type void
 	        					Type myreturntype = myreturn.optExpr.accept(this);
-	        					if (fundeclType!=myreturntype) {
+	        					if (myreturntype instanceof StructType) {
+	        						//StructType myreturnstruct = (StructType) myreturntype;
+	        						//System.out.println(myreturnstruct);
+	        						if (!(fundeclType instanceof StructType)) {
+	        							error("returning a struct type when the function is not meant to return a struct type");
+	        						}
+	        					}
+	        					if (myreturntype instanceof PointerType) {
+	        						//StructType myreturnstruct = (StructType) myreturntype;
+	        						//System.out.println(myreturnstruct);
+	        						if (!(fundeclType instanceof PointerType)) {
+	        							error("returning a struct type when the function is not meant to return a struct type");
+	        						}
+	        					}
+	        					if (fundeclType!=myreturntype && (!(myreturntype instanceof StructType))&& (!(myreturntype instanceof PointerType))) {
+	        						//System.out.println(fundeclType);
+	        						//System.out.println(myreturntype);
 	        						error("function type isn't same as return type");
 	        					}
 	        				}
@@ -649,11 +782,35 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
         			Return myreturn  = (Return) stmt;
         			if (myreturn.optExpr!=null) {//something comes after return
         				if (fundeclType.equals(BaseType.VOID)) {
-        						error("return exp even though void function");
-        				}
+    						Type myreturntype = myreturn.optExpr.accept(this);
+    						if(myreturntype instanceof BaseType) {
+    							if(!(myreturntype.equals(BaseType.VOID))) {
+    								error("return exp where exp is not void");
+    							}
+    						}
+    						else if (myreturntype==null) {//this mean we're returning a void and the function is void so it's fine
+    						//error("return exp where exp doesn't give any type");
+    						}
+    				}
         				else {//fundecl isn't of type void
         					Type myreturntype = myreturn.optExpr.accept(this);
-        					if (fundeclType!=myreturntype) {
+        					if (myreturntype instanceof StructType) {
+        						//StructType myreturnstruct = (StructType) myreturntype;
+        						//System.out.println(myreturnstruct);
+        						if (!(fundeclType instanceof StructType)) {
+        							error("returning a struct type when the function is not meant to return a struct type");
+        						}
+        					}
+        					if (myreturntype instanceof PointerType) {
+        						//StructType myreturnstruct = (StructType) myreturntype;
+        						//System.out.println(myreturnstruct);
+        						if (!(fundeclType instanceof PointerType)) {
+        							error("returning a struct type when the function is not meant to return a struct type");
+        						}
+        					}
+        					if (fundeclType!=myreturntype && (!(myreturntype instanceof StructType))&& (!(myreturntype instanceof PointerType))) {
+        						//System.out.println(fundeclType);
+        						//System.out.println(myreturntype);
         						error("function type isn't same as return type");
         					}
         				}

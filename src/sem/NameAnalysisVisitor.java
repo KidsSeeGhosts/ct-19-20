@@ -285,15 +285,31 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitFunCallExpr(FunCallExpr funCallExpr) {
+		Symbol currentcheck = scope.lookupCurrent(funCallExpr.string);
+		if (currentcheck!=null) {//found the variable in localscope
+			if(currentcheck.isVar) {
+				error("Can't do a funcall on a variable in the local scope");
+			}
+		}
 		Symbol fcs = scope.lookup(funCallExpr.string);//looks in current then outer scope.
 		if (fcs == null) {
 			error("FunCall has not been declared before");
+			for (Expr exp : funCallExpr.expressions){//this is probably not how you print the expressions list
+	            exp.accept(this);
+			}
+			return null;
+			
 		}
 //		else if(fcs.isProc==false){ Not worrying about this until type check bit
 //			 error("Got a symbol but it's not a function");
 //		}
-		else {   // everything is fine , record var decl
+		if (currentcheck!=null) {
+		if (!(currentcheck.isVar)){   // everything is fine , record var decl
 			funCallExpr.funDecl = ((ProcSymbol) fcs).fd;//the variable stores its declaration
+		}
+		}
+		if (currentcheck==null) {
+				funCallExpr.funDecl = ((ProcSymbol) fcs).fd;//the variable stores its declaration
 		}
 		for (Expr exp : funCallExpr.expressions){//this is probably not how you print the expressions list
             exp.accept(this);
@@ -330,6 +346,10 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			if (potentialstructsymbol.isStruct) {
 				//System.out.println("it was a struct");
 				StructSymbol mystructsymbol = (StructSymbol) potentialstructsymbol;
+				StructTypeDecl typetosave = new StructTypeDecl(mystructsymbol.std.structType,mystructsymbol.std.varDecls);
+				StructType finalstructtype = new StructType(myvarexpr.name);
+				finalstructtype.std=typetosave;
+				fieldAccessExpr.type=finalstructtype;
 				//System.out.println(mystructsymbol.std.varDecls.contains(VarDecl));
 				for (VarDecl vd : mystructsymbol.std.varDecls) {
 					if (vd.varName.equals(fieldAccessExpr.string)) {
@@ -346,6 +366,41 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			fieldAccessExpr.expr.accept(this);
 			return null;
 		}
+		if (fieldAccessExpr.expr instanceof FunCallExpr) {
+			FunCallExpr myfuncallexpr = (FunCallExpr) fieldAccessExpr.expr;
+			//System.out.println(myvarexpr.name);
+			Symbol potentialstructsymbol = scope.lookup(myfuncallexpr.string);
+			if (potentialstructsymbol==null){
+				error("Field access expression x.y, x was not defined anywhere");
+				fieldAccessExpr.expr.accept(this);
+				return null;
+			}
+			ProcSymbol myprocsymbol = (ProcSymbol) potentialstructsymbol;
+			if (myprocsymbol.fd.type instanceof StructType) {
+				//System.out.println("it was a struct");
+				StructType mystructtype = (StructType) myprocsymbol.fd.type;
+				Symbol mystructsymbol = scope.lookup(mystructtype.string);
+				StructSymbol myproperstructsymbol = (StructSymbol) mystructsymbol;
+				StructTypeDecl typetosave = new StructTypeDecl(myproperstructsymbol.std.structType,myproperstructsymbol.std.varDecls);
+				StructType finalstructtype = new StructType(mystructtype.string);
+				finalstructtype.std=typetosave;
+				fieldAccessExpr.type=finalstructtype;
+				for (VarDecl vd : myproperstructsymbol.std.varDecls) {
+					if (vd.varName.equals(fieldAccessExpr.string)) {
+						System.out.println("found it!");
+						//fieldAccessExpr.expr.accept(this);
+						return null;
+					}
+				}
+				error("Field Access Expression x.y, y was not defined in the struct x.");
+				fieldAccessExpr.expr.accept(this);
+				return null;
+			}
+			error("Field access expression x.y, x was not defined as a struct");
+			fieldAccessExpr.expr.accept(this);
+			return null;
+		}
+		
 		return null;
 	}
 
