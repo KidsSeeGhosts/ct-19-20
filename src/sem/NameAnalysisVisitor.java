@@ -170,6 +170,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 					StructTypeDecl mystd = new StructTypeDecl(mynewstructtype,thestructsymbol.std.varDecls);
 					mynewstructtype.std = mystd;
 					scope.put(new StructSymbol(mystd));//struct x y, x was found to be a struct and y was not found already declared in that struct
+					scope.put(new VarSymbol(vd));
 					return null;
 				}
 				else {
@@ -387,7 +388,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 				fieldAccessExpr.type=finalstructtype;
 				for (VarDecl vd : myproperstructsymbol.std.varDecls) {
 					if (vd.varName.equals(fieldAccessExpr.string)) {
-						System.out.println("found it!");
+						//System.out.println("found it!");
 						//fieldAccessExpr.expr.accept(this);
 						return null;
 					}

@@ -52,7 +52,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		            			if (myreturn.optExpr!=null) {//something comes after return
 		            				if (fundecltype.equals(BaseType.VOID)) {
 		        						Type myreturntype = myreturn.optExpr.accept(this);
-		        						if(myreturntype instanceof BaseType) {
+		        						if((myreturntype instanceof BaseType) || (myreturntype instanceof ArrayType)) {
 		        							if(!(myreturntype.equals(BaseType.VOID))) {
 		        								error("return exp where exp is not void");
 		        							}
@@ -125,7 +125,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
         			if (myreturn.optExpr!=null) {//something comes after return
         				if (fundecltype.equals(BaseType.VOID)) {
         						Type myreturntype = myreturn.optExpr.accept(this);
-        						if(myreturntype instanceof BaseType) {
+        						if((myreturntype instanceof BaseType) || (myreturntype instanceof ArrayType)) {
         							if(!(myreturntype.equals(BaseType.VOID))) {
         								error("return exp where exp is not void");
         							}
@@ -561,7 +561,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	        			if (myreturn.optExpr!=null) {//something comes after return
 	        				if (fundeclType.equals(BaseType.VOID)) {
         						Type myreturntype = myreturn.optExpr.accept(this);
-        						if(myreturntype instanceof BaseType) {
+        						if((myreturntype instanceof BaseType) || (myreturntype instanceof ArrayType)) {
         							if(!(myreturntype.equals(BaseType.VOID))) {
         								error("return exp where exp is not void");
         							}
@@ -633,7 +633,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	        			if (myreturn.optExpr!=null) {//something comes after return
 	        				if (fundeclType.equals(BaseType.VOID)) {
         						Type myreturntype = myreturn.optExpr.accept(this);
-        						if(myreturntype instanceof BaseType) {
+        						if((myreturntype instanceof BaseType) || (myreturntype instanceof ArrayType))  {
         							if(!(myreturntype.equals(BaseType.VOID))) {
         								error("return exp where exp is not void");
         							}
@@ -715,7 +715,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	        			if (myreturn.optExpr!=null) {//something comes after return
 	        				if (fundeclType.equals(BaseType.VOID)) {
         						Type myreturntype = myreturn.optExpr.accept(this);
-        						if(myreturntype instanceof BaseType) {
+        						if((myreturntype instanceof BaseType) || (myreturntype instanceof ArrayType)) {
         							if(!(myreturntype.equals(BaseType.VOID))) {
         								error("return exp where exp is not void");
         							}
@@ -783,7 +783,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
         			if (myreturn.optExpr!=null) {//something comes after return
         				if (fundeclType.equals(BaseType.VOID)) {
     						Type myreturntype = myreturn.optExpr.accept(this);
-    						if(myreturntype instanceof BaseType) {
+    						if((myreturntype instanceof BaseType) || (myreturntype instanceof ArrayType)) {
     							if(!(myreturntype.equals(BaseType.VOID))) {
     								error("return exp where exp is not void");
     							}
