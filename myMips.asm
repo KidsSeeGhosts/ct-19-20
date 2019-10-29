@@ -3,22 +3,22 @@
 
 .text
 
-	main:
-la $t8, 0($sp)
+j main
+	hello:
 li $s7 4
-sw $s7, ($t8)
+move $t9, $s7
+j helloEnd
+helloEnd:
+jr $ra
+	main:
 la $s6, 0($sp)
-lw $s6, ($s6)
-li $s5 5
-slt $s4, $s6, $s5
-li $s5, 1
-bne $s4, $s5, AfterIf1
-la $s6, 0($sp)
-lw $s6, ($s6)
+jal hello
+sw $t9, ($s6)
+la $s5, 0($sp)
+lw $s5, ($s5)
 li $v0, 1
-move $a0, $s6
+move $a0, $s5
 syscall
-AfterIf1: 
 mainEnd:
 li $v0, 10
 syscall

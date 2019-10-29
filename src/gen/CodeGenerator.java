@@ -41,6 +41,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
     private int myifCounter=1;
     private int mywhileCounter=1;
 	private String currentFunctionName;
+	private Register resultReg;//this will be t9
 
 
 
@@ -102,6 +103,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitProgram(Program p) {
+    		resultReg = getRegister();//this will be $t9
     		Register result = getRegister();
     		writer.println(".data");//this is where we put struct type decls and var decls
     		new DataVisitor(writer,p);//this is where I put all the strings in the data section first
@@ -124,10 +126,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
         writer.println("");
         writer.println(".text");//.text then functions in mips
         writer.println();
+        writer.println("j main");
         for (FunDecl fd : p.funDecls) {
     			currentFunctionName= fd.name;
             Register fdReg = fd.accept(this);
             writer.println(fd.name+"End:");
+            if (!(fd.name.equals("main"))){
+            		writer.println("jr $ra");
+            }
             writer.print("");
         }
 	    writer.println("li $v0, 10");//this is how you end in a program in MIPS
@@ -150,6 +156,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
     			vd.stackOffset=stackOffset;
     			stackOffset=stackOffset-4;//4 bytes for an int word
     			vd.stackOffSetWordSize = 4;
+    		}
+    		if (vd.type instanceof ArrayType) {
+    			ArrayType myarray = (ArrayType) vd.type;
+    			vd.stackOffset=stackOffset;
+    			stackOffset=stackOffset-(myarray.i*4);//4 bytes for an int word
+    			vd.stackOffSetWordSize = (myarray.i*4);
     		}
     		//Register varReg = getRegister();
     		//usedRegs.push(varReg);//pushing it onto my stack
@@ -221,12 +233,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		//System.out.println("inside fun call expr");
 		if(funCallExpr.string.equals("print_i")) {
 			Register numberRegister = funCallExpr.expressions.get(0).accept(this);
-			if(funCallExpr.expressions.get(0) instanceof VarExpr){
+			if(funCallExpr.expressions.get(0) instanceof VarExpr || funCallExpr.expressions.get(0) instanceof ArrayAccessExpr){
 				writer.println("lw "+numberRegister+", ("+numberRegister+")");//if it's a variable expression it will be an address
 			}
 			writer.println("li $v0, 1");
 			writer.println("move $a0, "+numberRegister);
 			writer.println("syscall");
+			return null;
 		}
 		if(funCallExpr.string.equals("print_s")) {
 			Register stringRegister = funCallExpr.expressions.get(0).accept(this);
@@ -236,9 +249,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			writer.println("li $v0, 4");
 			writer.println("move $a0, "+stringRegister);
 			writer.println("syscall");
+			return null;
 
 		}
-		return null;
+		else {
+			writer.println("jal "+funCallExpr.string);
+		}
+		return resultReg;
 	}
 
 	@Override
@@ -344,8 +361,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitArrayAccessExpr(ArrayAccessExpr arrayAccessExpr) {
-		// TODO Auto-generated method stub
-		return null;
+		Register arrayPosition = arrayAccessExpr.expr2.accept(this);
+		Register myvarxpr = arrayAccessExpr.expr1.accept(this);
+		writer.println("mul "+arrayPosition+", "+arrayPosition+", 4");
+		writer.println("add "+myvarxpr+", "+myvarxpr+", "+arrayPosition);
+		Register result = getRegister ();
+		writer.println("la "+result+", ("+myvarxpr+")");
+		return result;
 	}
 
 	@Override
@@ -411,6 +433,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	public Register visitAssign(Assign assign) {
 		Register lhs = assign.expr1.accept(this);
 		Register rhs = assign.expr2.accept(this);
+		if (assign.expr2 instanceof FunCallExpr) {
+			writer.println("sw "+resultReg+", ("+lhs+")");
+			return lhs;
+		}
 		writer.println("sw "+rhs+", ("+lhs+")"); //put 6 into y
 		return lhs;
 	}
@@ -424,7 +450,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	@Override
 	public Register visitReturn(Return myReturn) {
 		if (myReturn.optExpr!=null) {
+			if (myReturn.optExpr instanceof ArrayAccessExpr || myReturn.optExpr instanceof VarExpr) {
+				Register optexpr = myReturn.optExpr.accept(this);
+				writer.println("lw "+optexpr+", ("+optexpr+")");
+				writer.println("move $t9, "+optexpr);
+				writer.println("j "+currentFunctionName+"End");
+				return optexpr;
+			}
 			Register optexpr = myReturn.optExpr.accept(this);
+			writer.println("move $t9, "+optexpr);
 			writer.println("j "+currentFunctionName+"End");
 			return optexpr;
 		}

@@ -1,10 +1,13 @@
 #include "minic-stdlib.h"
-void main(){
-    int x;
-    x=4;
-    if (x<5){
-        print_i(x);
-    }
-    
+
+
+
+int hello(){
+    return 4;
 }
 
+void main(){
+    int x;
+    x=hello();
+    print_i(x);
+}
