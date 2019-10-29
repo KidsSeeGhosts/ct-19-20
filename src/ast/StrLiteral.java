@@ -3,6 +3,7 @@ package ast;
 public class StrLiteral extends Expr {
 
 	public final String string;
+	public String label;
 	
 	public StrLiteral(String string) {
 		this.string=string;

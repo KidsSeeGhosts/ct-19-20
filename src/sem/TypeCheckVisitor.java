@@ -502,6 +502,17 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 				if (rhstype==lhstype) {//no error
 					return null;
 				}
+				if ((lhstype instanceof PointerType) && (rhstype instanceof PointerType)) {
+					PointerType leftpoint = (PointerType) lhstype;
+					PointerType rightpoint = (PointerType) rhstype;
+					if(leftpoint.type==rightpoint.type) {
+						return null;
+					}
+					else {
+						error("in assign, left and right side were pointers but of different base types");
+						return null;
+					}
+				}
 				else {
 //					System.out.println(lhstype);
 //					System.out.println(rhstype);

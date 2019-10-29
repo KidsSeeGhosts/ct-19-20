@@ -1,0 +1,9 @@
+.data 
+
+.text
+
+main:
+prompt: .asciiz  "Hello world!"
+li      $v0,4       # code 4 == print string
+la      $a0,prompt  # $a0 == address of the string
+syscall

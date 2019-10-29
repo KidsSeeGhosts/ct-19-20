@@ -16,7 +16,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     // contains all the free temporary registers
     private Stack<Register> freeRegs = new Stack<Register>();
-    private Stack<Register> usedRegs = new Stack<Register>();
+    //private Stack<Register> usedRegs = new Stack<Register>();
+    private int stackOffset = 0;
 
     public CodeGenerator() {
         freeRegs.addAll(Register.tmpRegs);
@@ -45,7 +46,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     public void emitProgram(Program program, File outputFile) throws FileNotFoundException {
         writer = new PrintWriter(outputFile);
-
+        //Before doing visit program, here I should do DataVisitor
         visitProgram(program);
         //System.out.println("reached writer.close");
         writer.close();
@@ -96,11 +97,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitProgram(Program p) {
     		Register result = getRegister();
     		writer.println(".data");//this is where we put struct type decls and var decls
+    		new DataVisitor(writer,p);
     		writer.println();
 	    	for (StructTypeDecl std : p.structTypeDecls) {
 	    		Register stdReg = std.accept(this);
         }
         for (VarDecl vd : p.varDecls) {
+        		//these variables should be done like labels
             Register vdReg = vd.accept(this);
         }
         writer.println(".text");//.text then functions in mips
@@ -117,11 +120,20 @@ public class CodeGenerator implements ASTVisitor<Register> {
         return result;
     }
 
-    @Override
+	@Override
     public Register visitVarDecl(VarDecl vd) {
-        // TODO: to complete
-    		Register varReg = getRegister();
-    		usedRegs.push(varReg);//pushing it onto my stack
+    		if(vd.type==BaseType.INT) {
+    			vd.stackOffset=stackOffset;
+    			stackOffset=stackOffset-4;//4 bytes for an int word
+    			vd.stackOffSetWordSize = 4;
+    		}
+    		if (vd.type instanceof PointerType) {
+    			vd.stackOffset=stackOffset;
+    			stackOffset=stackOffset-4;//4 bytes for an int word
+    			vd.stackOffSetWordSize = 4;
+    		}
+    		//Register varReg = getRegister();
+    		//usedRegs.push(varReg);//pushing it onto my stack
         return null;
     }
 
@@ -130,13 +142,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
 //loadI @x → r1  load the address of x into r1
 //loadA r1 → r2  now value of x is in r2
     @Override
-    public Register visitVarExpr(VarExpr v) {
-	    	Register addressReg = getRegister ();
+    public Register visitVarExpr(VarExpr v) {//this should return a register with the variable's location in memory
+
 	    	Register result = getRegister ();
-	    	Register varAddress = v.vd.accept(this);
-	    	writer.println("li, " +addressReg.toString() +", "+ varAddress);
-	    	writer.println("la"+ ", "+result.toString()+", "+addressReg.toString());
-	    	freeRegister ( addressReg ) ;
+	    	writer.println("la "+result+", "+((-stackOffset)-v.vd.stackOffset-v.vd.stackOffSetWordSize)+"($sp)");
 	    	return result ;
     }
 
@@ -170,8 +179,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitStrLiteral(StrLiteral strLiteral) {
-		// TODO Auto-generated method stub
-		return null;
+		Register stringReg = getRegister();
+		writer.println("la "+stringReg+", "+strLiteral.label);
+		return stringReg;
 	}
 
 	@Override
@@ -185,9 +195,22 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		//System.out.println("inside fun call expr");
 		if(funCallExpr.string.equals("print_i")) {
 			Register numberRegister = funCallExpr.expressions.get(0).accept(this);
+			if(funCallExpr.expressions.get(0) instanceof VarExpr){
+				writer.println("lw "+numberRegister+", ("+numberRegister+")");//if it's a variable expression it will be an address
+			}
 			writer.println("li $v0, 1");
 			writer.println("move $a0, "+numberRegister);
 			writer.println("syscall");
+		}
+		if(funCallExpr.string.equals("print_s")) {
+			Register stringRegister = funCallExpr.expressions.get(0).accept(this);
+			if(funCallExpr.expressions.get(0) instanceof VarExpr){
+				writer.println("lw "+stringRegister+", ("+stringRegister+")");//if it's a variable expression it will be an address
+			}
+			writer.println("li $v0, 4");
+			writer.println("move $a0, "+stringRegister);
+			writer.println("syscall");
+
 		}
 		return null;
 	}
@@ -196,7 +219,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	public Register visitBinOp(BinOp binOp) {
 		//System.out.println("in bin op");
 		Register lhsReg = binOp.lhs.accept(this);
+		if(binOp.lhs instanceof VarExpr){
+			writer.println("lw "+lhsReg+", ("+lhsReg+")");//if it's a variable expression it will be an address
+		}
 		Register rhsReg = binOp.rhs.accept(this); 
+		if(binOp.rhs instanceof VarExpr){
+			writer.println("lw "+rhsReg+", ("+rhsReg+")");//if it's a variable expression it will be an address
+		}
 		Register result = getRegister();
 		switch(binOp.op) {
 		//add $s0, $s1, $s2    s0 = g + h   where f = g+h where f is s0, g is s1 and h is s2
@@ -219,7 +248,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				writer.println("AfterAND: ");
 				break;
 			case DIV:
-				writer.println("div "+result+", "+lhsReg+", "+rhsReg); 
+				writer.println("div "+lhsReg+", "+rhsReg); 
+				writer.println("mflo "+result);//gets the integer quotient
 				break;
 			case EQ:
 				writer.println("beq " +lhsReg+", "+rhsReg+", EqualTo");
@@ -254,7 +284,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				writer.println("slt "+result+", "+lhsReg+", "+rhsReg);
 				break;
 			case MOD:
-				writer.println("rem "+result+", "+lhsReg+", "+rhsReg);
+				writer.println("div "+lhsReg+", "+rhsReg); 
+				writer.println("mfhi "+result);//gets the reaminder
 				break;
 			case NE:
 				writer.println("bne " +lhsReg+", "+rhsReg+", NotEqualTo");
@@ -310,8 +341,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitTypeCastExpr(TypeCastExpr typeCastExpr) {
-		// TODO Auto-generated method stub
-		return null;
+		typeCastExpr.type.accept(this);
+		Register exprReg = typeCastExpr.expr.accept(this);
+		return exprReg;
 	}
 
 	@Override
@@ -328,8 +360,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitAssign(Assign assign) {
-		// TODO Auto-generated method stub
-		return null;
+		Register lhs = assign.expr1.accept(this);
+		Register rhs = assign.expr2.accept(this);
+		writer.println("sw "+rhs+", ("+lhs+")"); //put 6 into y
+		return lhs;
 	}
 
 	@Override

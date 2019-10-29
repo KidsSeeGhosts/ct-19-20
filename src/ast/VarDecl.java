@@ -3,6 +3,8 @@ package ast;
 public class VarDecl implements ASTNode {
     public final Type type;
     public final String varName;
+    public int stackOffset;
+    public int stackOffSetWordSize;
 
     public VarDecl(Type type, String varName) {
 	    this.type = type;
