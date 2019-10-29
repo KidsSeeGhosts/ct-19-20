@@ -301,7 +301,7 @@ public class Tokeniser {
                 if ((c=='t' || c=='b' || c=='n'
                      || c=='r' || c=='f' || c=='\''
                      || c=='"' || c=='\\' || c=='0') && peekChar=='\'') {//checks for a valid escape character else it's invalid
-                    c = scanner.next();
+                		c = scanner.next();
                     return new Token(TokenClass.CHAR_LITERAL,sb.toString(), line, column);
                 }
                 if (c=='\'' && peekChar!='\'') {//means you can't have '\' as a char literal

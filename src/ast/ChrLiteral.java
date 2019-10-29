@@ -2,6 +2,7 @@ package ast;
 
 public class ChrLiteral extends Expr {
 	public final char c;
+	public char escC='z';
 	
 	public ChrLiteral(char c) {
 		this.c=c;

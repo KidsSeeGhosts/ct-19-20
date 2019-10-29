@@ -162,6 +162,10 @@ public class ASTPrinter implements ASTVisitor<Void> {
 	@Override
 	public Void visitChrLiteral(ChrLiteral chrLiteral) {
 		writer.print("ChrLiteral(");
+		if (chrLiteral.escC!='z') {
+			writer.print("\\"+chrLiteral.escC+")");
+			return null;
+		}
 		writer.print(chrLiteral.c+")");
 		return null;
 	}

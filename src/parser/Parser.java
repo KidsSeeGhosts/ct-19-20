@@ -807,6 +807,12 @@ public class Parser {
     			}
     	}
     		if (accept(TokenClass.CHAR_LITERAL)){//CHAR LITERAL
+    			if (token.data.charAt(0)=='\\') {
+    				ChrLiteral mycharliteral =  new ChrLiteral(token.data.charAt(0));
+    				mycharliteral.escC=token.data.charAt(1);
+    				nextToken();
+    	         	return mycharliteral;
+    			}
 			ChrLiteral mycharliteral =  new ChrLiteral(token.data.charAt(0));//ChrLiteral(char c) abstract gramamr THIS MIGHT NOT WORK FOR ESCAPE CHARACTERS BUT WE'LL FIND OUT
          	nextToken();
          	return mycharliteral;
