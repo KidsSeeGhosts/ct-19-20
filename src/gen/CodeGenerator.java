@@ -37,7 +37,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
         freeRegs.push(reg);
     }
 
-
+    private int binOpLabelCounter=1;
+    private int myifCounter=1;
+    private int mywhileCounter=1;
+	private String currentFunctionName;
 
 
 
@@ -69,6 +72,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	        }
 	    	//System.out.println("finished var decls in block");
 	        for (Stmt stmt : b.stmts) {
+	        		if(stmt instanceof Return) {
+	        			stmt.accept(this);
+	        			break;
+	        		}
 	            stmt.accept(this);
 	        }
         return null;
@@ -78,7 +85,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitFunDecl(FunDecl fd) {
         // TODO: to complete
     		//System.out.println("inside fun decl");
-    		writer.println("	"+fd.name+":");//functino name is a label
+    		writer.println("	"+fd.name+":");//function name is a label
         fd.type.accept(this);//will return a register'
         if (!fd.vardecls.isEmpty()){
 	        	for (VarDecl vd : fd.vardecls) {
@@ -97,20 +104,31 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitProgram(Program p) {
     		Register result = getRegister();
     		writer.println(".data");//this is where we put struct type decls and var decls
-    		new DataVisitor(writer,p);
+    		new DataVisitor(writer,p);//this is where I put all the strings in the data section first
     		writer.println();
 	    	for (StructTypeDecl std : p.structTypeDecls) {
 	    		Register stdReg = std.accept(this);
         }
-        for (VarDecl vd : p.varDecls) {
-        		//these variables should be done like labels
-            Register vdReg = vd.accept(this);
+        for (VarDecl vd : p.varDecls) {//defining global variables
+        		vd.localOrGlobal="global";
+        		if(vd.type instanceof BaseType){
+        			BaseType mybt = (BaseType) vd.type;
+        			if(mybt.equals(BaseType.INT)) {
+            			writer.println(vd.varName+": .word");
+        			}
+        			if(mybt.equals(BaseType.CHAR)) {
+            			writer.println(vd.varName+": .byte 1");
+        			}
+        		}
         }
+        writer.println("");
         writer.println(".text");//.text then functions in mips
         writer.println();
         for (FunDecl fd : p.funDecls) {
+    			currentFunctionName= fd.name;
             Register fdReg = fd.accept(this);
-            //writer.println("visit fd");
+            writer.println(fd.name+"End:");
+            writer.print("");
         }
 	    writer.println("li $v0, 10");//this is how you end in a program in MIPS
 	    	writer.println("syscall");
@@ -122,6 +140,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
     public Register visitVarDecl(VarDecl vd) {
+		vd.localOrGlobal="local";
     		if(vd.type==BaseType.INT) {
     			vd.stackOffset=stackOffset;
     			stackOffset=stackOffset-4;//4 bytes for an int word
@@ -143,10 +162,17 @@ public class CodeGenerator implements ASTVisitor<Register> {
 //loadA r1 → r2  now value of x is in r2
     @Override
     public Register visitVarExpr(VarExpr v) {//this should return a register with the variable's location in memory
-
-	    	Register result = getRegister ();
-	    	writer.println("la "+result+", "+((-stackOffset)-v.vd.stackOffset-v.vd.stackOffSetWordSize)+"($sp)");
-	    	return result ;
+    		if (v.vd.localOrGlobal.equals("local")) {
+		    	Register result = getRegister ();
+		    	writer.println("la "+result+", "+((-stackOffset)-v.vd.stackOffset-v.vd.stackOffSetWordSize)+"($sp)");
+		    	return result;
+    		}
+    		if (v.vd.localOrGlobal.equals("global")) {
+    			Register result = getRegister ();
+    			writer.println("la "+result+", "+v.name);
+		    	return result ;
+    		}
+	    	return null ;
     }
 
 	@Override
@@ -236,49 +262,49 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				writer.println("mul "+result+", "+lhsReg+", "+rhsReg); 
 				break ;
 			case AND:
-				writer.println("beq " +lhsReg+", "+1+", LHStrue");
+				writer.println("beq " +lhsReg+", "+1+", LHStrue"+binOpLabelCounter);
 				writer.println("li "+result+", 0");
-				writer.println("j AfterAND");
-				writer.println("LHStrue: ");
-				writer.println("beq " +rhsReg+", "+1+", RHStrue");
+				writer.println("j AfterAND"+binOpLabelCounter);
+				writer.println("LHStrue"+binOpLabelCounter+": ");
+				writer.println("beq " +rhsReg+", "+1+", RHStrue"+binOpLabelCounter);
 				writer.println("li "+result+", 0");
-				writer.println("j AfterAND");
-				writer.println("RHStrue: ");
+				writer.println("j AfterAND"+binOpLabelCounter);
+				writer.println("RHStrue"+binOpLabelCounter+": ");
 				writer.println("li "+result+", 1");
-				writer.println("AfterAND: ");
+				writer.println("AfterAND"+binOpLabelCounter+": ");
 				break;
 			case DIV:
 				writer.println("div "+lhsReg+", "+rhsReg); 
 				writer.println("mflo "+result);//gets the integer quotient
 				break;
 			case EQ:
-				writer.println("beq " +lhsReg+", "+rhsReg+", EqualTo");
+				writer.println("beq " +lhsReg+", "+rhsReg+", EqualTo"+binOpLabelCounter);
 				writer.println("li "+result+", 0");
-				writer.println("j AfterEqualTo");
-				writer.println("EqualTo: ");
+				writer.println("j AfterEqualTo"+binOpLabelCounter);
+				writer.println("EqualTo"+binOpLabelCounter+": ");
 				writer.println("li "+result+", 1");
-				writer.println("AfterEqualTo:");
+				writer.println("AfterEqualTo"+binOpLabelCounter+":");
 				break;
 			case GE:
 				writer.println("slt "+result+", "+rhsReg+", "+lhsReg); //returns 1 if left is greater than right 15>3
-				writer.println("beq "+ result+", 1, GreaterThanOrEqualTo  ");   //if $s0 > $s1, goes to label1
-				writer.println("beq " +lhsReg+", "+rhsReg+", GreaterThanOrEqualTo"); //  if equal goes to label 1
-				writer.println("j AfterGreaterThanOrEqualTo");
-				writer.println("GreaterThanOrEqualTo: ");
+				writer.println("beq "+ result+", 1, GreaterThanOrEqualTo"+binOpLabelCounter);   //if $s0 > $s1, goes to label1
+				writer.println("beq " +lhsReg+", "+rhsReg+", GreaterThanOrEqualTo"+binOpLabelCounter); //  if equal goes to label 1
+				writer.println("j AfterGreaterThanOrEqualTo"+binOpLabelCounter);
+				writer.println("GreaterThanOrEqualTo"+binOpLabelCounter+": ");
 				writer.println("li "+result+", 1");
-				writer.println("AfterGreaterThanOrEqualTo: ");
+				writer.println("AfterGreaterThanOrEqualTo"+binOpLabelCounter+": ");
 				break;
 			case GT:
 				writer.println("slt "+result+", "+rhsReg+", "+lhsReg); //returns 1 if left is greater than right 15>3
 				break;
 			case LE:
 				writer.println("slt "+result+", "+lhsReg+", "+rhsReg); //returns 1 if left is greater than right 15>3
-				writer.println("beq "+ result+", 1, LessThanOrEqualTo  ");   //if $s0 > $s1, goes to label1
-				writer.println("beq " +lhsReg+", "+rhsReg+", LessThanOrEqualTo"); //  if equal goes to label 1
-				writer.println("j AfterLessThanOrEqualTo");
-				writer.println("LessThanOrEqualTo: ");
+				writer.println("beq "+ result+", 1, LessThanOrEqualTo"+binOpLabelCounter);   //if $s0 > $s1, goes to label1
+				writer.println("beq " +lhsReg+", "+rhsReg+", LessThanOrEqualTo"+binOpLabelCounter); //  if equal goes to label 1
+				writer.println("j AfterLessThanOrEqualTo"+binOpLabelCounter);
+				writer.println("LessThanOrEqualTo"+binOpLabelCounter+": ");
 				writer.println("li "+result+", 1");
-				writer.println("AfterLessThanOrEqualTo: ");
+				writer.println("AfterLessThanOrEqualTo"+binOpLabelCounter+": ");
 				break;
 			case LT:
 				writer.println("slt "+result+", "+lhsReg+", "+rhsReg);
@@ -288,21 +314,21 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				writer.println("mfhi "+result);//gets the reaminder
 				break;
 			case NE:
-				writer.println("bne " +lhsReg+", "+rhsReg+", NotEqualTo");
+				writer.println("bne " +lhsReg+", "+rhsReg+", NotEqualTo"+binOpLabelCounter);
 				writer.println("li "+result+", 0");
-				writer.println("j AfterNotEqualTo");
-				writer.println("NotEqualTo: ");
+				writer.println("j AfterNotEqualTo"+binOpLabelCounter);
+				writer.println("NotEqualTo"+binOpLabelCounter+": ");
 				writer.println("li "+result+", 1");
-				writer.println("AfterNotEqualTo:");
+				writer.println("AfterNotEqualTo"+binOpLabelCounter+":");
 				break;
 			case OR:
-				writer.println("beq "+lhsReg+", 1 TrueOR");
-				writer.println("beq "+rhsReg+",1 TrueOR");
+				writer.println("beq "+lhsReg+", 1 TrueOR"+binOpLabelCounter);
+				writer.println("beq "+rhsReg+",1 TrueOR"+binOpLabelCounter);
 				writer.println("li "+result+", 0");
-				writer.println("j AfterOR");
-				writer.println("TrueOR: ");
+				writer.println("j AfterOR"+binOpLabelCounter);
+				writer.println("TrueOR"+binOpLabelCounter+": ");
 				writer.println("li "+result+", 1");
-				writer.println("AfterOR: ");
+				writer.println("AfterOR"+binOpLabelCounter+": ");
 				break;
 			case SUB:
 				writer.println("sub "+result+", "+lhsReg+", "+rhsReg);
@@ -312,6 +338,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		} 
 		freeRegister (lhsReg );
 		freeRegister (rhsReg ); 
+		binOpLabelCounter++;
 		return result ;
 	}
 
@@ -348,13 +375,35 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitWhile(While myWhile) {
-		// TODO Auto-generated method stub
+		Register expression = myWhile.expr.accept(this);
+		Register oneReg = getRegister();
+		writer.println("li "+oneReg+", 1");
+		writer.println("MyWhile"+mywhileCounter+": bne "+expression+", "+oneReg+", AfterWhile"+mywhileCounter);
+		mywhileCounter++;
+		myWhile.stmt.accept(this);
+		Register check = myWhile.expr.accept(this);
+		writer.println("move "+expression+", "+check);
+		writer.println("j MyWhile"+(mywhileCounter-1));
+		writer.println("AfterWhile"+(mywhileCounter-1)+": ");
+		freeRegister(oneReg);
+		freeRegister(expression);
 		return null;
 	}
 
 	@Override
 	public Register visitIf(If myIf) {
-		// TODO Auto-generated method stub
+		Register expression = myIf.expr.accept(this);
+		Register oneReg = getRegister();
+		writer.println("li "+oneReg+", 1");
+		writer.println("bne "+expression+", "+oneReg+", AfterIf"+myifCounter);
+		myIf.stmt.accept(this);
+		writer.println("AfterIf"+myifCounter+": ");
+		myifCounter++;
+		if (myIf.optStmt!=null){
+			myIf.optStmt.accept(this);
+		}
+		freeRegister(oneReg);
+		freeRegister(expression);
 		return null;
 	}
 
@@ -374,7 +423,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitReturn(Return myReturn) {
-		// TODO Auto-generated method stub
+		if (myReturn.optExpr!=null) {
+			Register optexpr = myReturn.optExpr.accept(this);
+			writer.println("j "+currentFunctionName+"End");
+			return optexpr;
+		}
+		writer.println("j "+currentFunctionName+"End");
 		return null;
 	}
 }
