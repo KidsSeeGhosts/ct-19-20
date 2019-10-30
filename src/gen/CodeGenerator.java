@@ -115,7 +115,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         		if(vd.type instanceof BaseType){
         			BaseType mybt = (BaseType) vd.type;
         			if(mybt.equals(BaseType.INT)) {
-            			writer.println(vd.varName+": .word");
+            			writer.println(vd.varName+": .word 0");
         			}
         			if(mybt.equals(BaseType.CHAR)) {
             			writer.println(vd.varName+": .byte 1");
@@ -156,6 +156,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
     		if(vd.type==BaseType.INT) {
     			vd.stackOffset=stackOffset;
     			stackOffset=stackOffset-4;//4 bytes for an int word
+    			vd.stackOffSetWordSize = 4;
+    		}
+    		if(vd.type==BaseType.CHAR) {
+    			vd.stackOffset=stackOffset;
+    			stackOffset=stackOffset-4;//4 bytes for a char word
     			vd.stackOffSetWordSize = 4;
     		}
     		if (vd.type instanceof PointerType) {
@@ -258,6 +263,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			if(funCallExpr.expressions.get(0) instanceof VarExpr){
 				writer.println("lw "+stringRegister+", ("+stringRegister+")");//if it's a variable expression it will be an address
 			}
+//			if(funCallExpr.expressions.get(0) instanceof TypeCastExpr){
+//				writer.println("lw "+stringRegister+", ("+stringRegister+")");//if it's a variable expression it will be an address
+//			}
 			writer.println("li $v0, 4");
 			writer.println("move $a0, "+stringRegister);
 			writer.println("syscall");
