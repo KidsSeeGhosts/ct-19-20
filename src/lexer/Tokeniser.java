@@ -236,7 +236,7 @@ public class Tokeniser {
                 peekChar = scanner.peek();
                 if (c=='\\') {//if potentially start of escape character
                     c=scanner.next();
-                    sb.deleteCharAt(sb.length() - 1);//get rid of the slash in the string builder
+                    //sb.deleteCharAt(sb.length() - 1);//get rid of the slash in the string builder
                     peekChar=scanner.peek();
                     if (!(c=='t' || c=='b' || c=='n'
                             || c=='r' || c=='f' || c=='\''
@@ -251,6 +251,7 @@ public class Tokeniser {
                     if ((c=='t' || c=='b' || c=='n'
                             || c=='r' || c=='f' || c=='\''
                             || c=='"' || c=='\\' || c=='0') && peekChar=='"') {//
+                    		sb.append(c);
                     	    c=scanner.next();
                         return new Token(TokenClass.STRING_LITERAL, sb.toString(),line, column);
                     }

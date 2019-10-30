@@ -263,9 +263,33 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			if(funCallExpr.expressions.get(0) instanceof VarExpr){
 				writer.println("lw "+stringRegister+", ("+stringRegister+")");//if it's a variable expression it will be an address
 			}
-//			if(funCallExpr.expressions.get(0) instanceof TypeCastExpr){
-//				writer.println("lw "+stringRegister+", ("+stringRegister+")");//if it's a variable expression it will be an address
-//			}
+			if(funCallExpr.expressions.get(0) instanceof TypeCastExpr){
+				TypeCastExpr mytypecast = (TypeCastExpr) funCallExpr.expressions.get(0);
+				if (mytypecast.expr instanceof StrLiteral) {
+					writer.println("li $v0, 4");
+					writer.println("move $a0, "+stringRegister);
+					writer.println("syscall");
+					return null;
+				}
+				if(mytypecast.expr.type instanceof ArrayType) {
+					ArrayType myarray = (ArrayType) mytypecast.expr.type;
+					int arraySize = myarray.i;
+					writer.println("lb "+stringRegister+", ("+stringRegister+")");
+					writer.println("li $v0, 11");
+					writer.println("move $a0, "+stringRegister);
+					writer.println("syscall");
+					for (int i=1;i<arraySize;i++) {
+					writer.println("la "+stringRegister+", "+(i*4)+"($sp)");
+					writer.println("lb "+stringRegister+", ("+stringRegister+")");
+					writer.println("li $v0, 11");
+					writer.println("move $a0, "+stringRegister);
+					writer.println("syscall");
+					}
+					freeRegister(stringRegister);
+					return null;
+					
+				}
+			}
 			writer.println("li $v0, 4");
 			writer.println("move $a0, "+stringRegister);
 			writer.println("syscall");
@@ -286,10 +310,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		if(funCallExpr.string.equals("read_i")) {
 			writer.println("li $v0, 5");
 			writer.println("syscall");
+			writer.println( "move "+ resultReg+", $v0");
+			return resultReg;
 		}
 		if(funCallExpr.string.equals("read_c")) {
 			writer.println("li $v0, 12");
 			writer.println("syscall");
+			writer.println( "move "+ resultReg+", $v0");
+			return resultReg;
 		}
 		else {
 			writer.println("jal "+funCallExpr.string);
@@ -460,11 +488,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		writer.println("li "+oneReg+", 1");
 		writer.println("bne "+expression+", "+oneReg+", AfterIf"+myifCounter);
 		myIf.stmt.accept(this);
-		writer.println("AfterIf"+myifCounter+": ");
+		writer.println("j AfterIfElse"+myifCounter);
+		int afterifelse = myifCounter;
 		myifCounter++;
+		writer.println("AfterIf"+afterifelse+":");
 		if (myIf.optStmt!=null){
 			myIf.optStmt.accept(this);
 		}
+		writer.println("AfterIfElse"+afterifelse+":");
 		freeRegister(oneReg);
 		freeRegister(expression);
 		return null;
@@ -476,6 +507,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		Register rhs = assign.expr2.accept(this);
 		if (assign.expr2 instanceof FunCallExpr) {
 			writer.println("sw "+resultReg+", ("+lhs+")");
+			return lhs;
+		}
+		if (assign.expr2 instanceof VarExpr) {
+			writer.println("lw "+rhs+", ("+rhs+")");
+			writer.println("sw "+rhs+", ("+lhs+")"); //put 6 into y
+			freeRegister(rhs);
 			return lhs;
 		}
 		writer.println("sw "+rhs+", ("+lhs+")"); //put 6 into y
