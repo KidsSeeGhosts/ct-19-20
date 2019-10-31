@@ -84,9 +84,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitFunDecl(FunDecl fd) {
-        // TODO: to complete
-    		//System.out.println("inside fun decl");
+    		int stackLocation = -stackOffset;
+    		stackOffset=stackOffset-4;
     		writer.println("	"+fd.name+":");//function name is a label
+			if (!(fd.name.equals("main"))){
+				Register raStoring = getRegister(); 
+				writer.println(	"move "+raStoring +", $ra");
+				writer.println("sw "+raStoring+", "+stackLocation+"($sp)");
+				freeRegister(raStoring);
+			}
         fd.type.accept(this);//will return a register'
         if (!fd.vardecls.isEmpty()){
 	        	for (VarDecl vd : fd.vardecls) {
@@ -97,7 +103,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
         }
         //System.out.println("about to do block");
         fd.block.accept(this);
-        
+        writer.println(fd.name+"End:");
+        if (!(fd.name.equals("main"))){
+        		Register raRetrieving = getRegister(); 
+        		writer.println("lw "+raRetrieving+", "+stackLocation+"($sp)");
+        		writer.println("move $ra, "+raRetrieving);
+        		writer.println("jr $ra");
+        		freeRegister(raRetrieving);
+        }
+        writer.print("");
         return null;
     }
 
@@ -136,11 +150,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
         for (FunDecl fd : p.funDecls) {
     			currentFunctionName= fd.name;
             fd.accept(this);
-            writer.println(fd.name+"End:");
-            if (!(fd.name.equals("main"))){
-            		writer.println("jr $ra");
-            }
-            writer.print("");
         }
 	    writer.println("li $v0, 10");//this is how you end in a program in MIPS
 	    	writer.println("syscall");
@@ -249,7 +258,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		//System.out.println("inside fun call expr");
 		if(funCallExpr.string.equals("print_i")) {
 			Register numberRegister = funCallExpr.expressions.get(0).accept(this);
-			if(funCallExpr.expressions.get(0) instanceof VarExpr || funCallExpr.expressions.get(0) instanceof ArrayAccessExpr){
+			if(funCallExpr.expressions.get(0) instanceof VarExpr || funCallExpr.expressions.get(0) instanceof ArrayAccessExpr || funCallExpr.expressions.get(0) instanceof ArrayAccessExpr){
 				writer.println("lw "+numberRegister+", ("+numberRegister+")");//if it's a variable expression it will be an address
 			}
 			writer.println("li $v0, 1");

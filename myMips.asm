@@ -1,62 +1,102 @@
 .data
+stringLabel1: .asciiz "First "
+stringLabel2: .asciiz " terms of Fibonacci series are : "
+stringLabel3: .asciiz " "
 
 
 .text
 
 j main
 	main:
-la $t8, 4($sp)
-li $s7 1
-sw $s7, ($t8)
-la $s7, 8($sp)
-li $s6 1
+la $t8, 28($sp)
+li $v0, 5
+syscall
+move $t9, $v0
+sw $t9, ($t8)
+la $s7, 32($sp)
+li $s6 0
 sw $s6, ($s7)
-la $s6, 4($sp)
-lw $s6, ($s6)
-li $s5 5
-slt $s4, $s6, $s5
-li $s5, 1
-MyWhile1: bne $s4, $s5, AfterWhile1
-la $s6, 8($sp)
-lw $s6, ($s6)
-li $s3 5
-slt $s2, $s6, $s3
-li $s3, 1
-MyWhile2: bne $s2, $s3, AfterWhile2
-la $s6, 8($sp)
-la $s1, 8($sp)
+la $s6, 36($sp)
+li $s5 1
+sw $s5, ($s6)
+la $s5, stringLabel1
+li $v0, 4
+move $a0, $s5
+syscall
+la $s4, 28($sp)
+lw $s4, ($s4)
+li $v0, 1
+move $a0, $s4
+syscall
+la $s4, stringLabel2
+li $v0, 4
+move $a0, $s4
+syscall
+la $s3, 44($sp)
+li $s2 0
+sw $s2, ($s3)
+la $s2, 44($sp)
+lw $s2, ($s2)
+la $s1, 28($sp)
 lw $s1, ($s1)
-li $s0 1
-add $t7, $s1, $s0
-sw $t7, ($s6)
-la $t7, 8($sp)
-lw $t7, ($t7)
+slt $s0, $s2, $s1
+li $s1, 1
+MyWhile1: bne $s0, $s1, AfterWhile1
+la $s2, 44($sp)
+lw $s2, ($s2)
+li $t7 1
+slt $t6, $s2, $t7
+beq $t6, 1, LessThanOrEqualTo2
+beq $s2, $t7, LessThanOrEqualTo2
+j AfterLessThanOrEqualTo2
+LessThanOrEqualTo2: 
+li $t6, 1
+AfterLessThanOrEqualTo2: 
+li $t7, 1
+bne $t6, $t7, AfterIf1
+la $s2, 40($sp)
+la $t5, 44($sp)
+lw $t5, ($t5)
+sw $t5, ($s2)
+j AfterIfElse1
+AfterIf1:
+la $t5, 40($sp)
+la $t4, 32($sp)
+lw $t4, ($t4)
+la $t3, 36($sp)
+lw $t3, ($t3)
+add $t2, $t4, $t3
+sw $t2, ($t5)
+la $t2, 32($sp)
+la $t3, 36($sp)
+lw $t3, ($t3)
+sw $t3, ($t2)
+la $t3, 36($sp)
+la $t4, 40($sp)
+lw $t4, ($t4)
+sw $t4, ($t3)
+AfterIfElse1:
+la $t6, 40($sp)
+lw $t6, ($t6)
 li $v0, 1
-move $a0, $t7
+move $a0, $t6
 syscall
-la $t7, 8($sp)
-lw $t7, ($t7)
-li $s0 5
-slt $s1, $t7, $s0
-move $s2, $s1
-j MyWhile2
-AfterWhile2: 
-la $s2, 4($sp)
-la $s3, 4($sp)
-lw $s3, ($s3)
-li $s0 1
-add $t7, $s3, $s0
-sw $t7, ($s2)
-la $t7, 4($sp)
-lw $t7, ($t7)
-li $v0, 1
-move $a0, $t7
+la $t6, stringLabel3
+li $v0, 4
+move $a0, $t6
 syscall
-la $t7, 4($sp)
-lw $t7, ($t7)
-li $s0 5
-slt $s3, $t7, $s0
-move $s4, $s3
+la $t7, 44($sp)
+la $t4, 44($sp)
+lw $t4, ($t4)
+li $t1 1
+add $t0, $t4, $t1
+sw $t0, ($t7)
+la $t0, 44($sp)
+lw $t0, ($t0)
+la $t1, 28($sp)
+lw $t1, ($t1)
+slt $t4, $t0, $t1
+move $s0, $t4
 j MyWhile1
 AfterWhile1: 
 mainEnd:
