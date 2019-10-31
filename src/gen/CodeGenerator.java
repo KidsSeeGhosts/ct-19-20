@@ -470,12 +470,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		Register oneReg = getRegister();
 		writer.println("li "+oneReg+", 1");
 		writer.println("MyWhile"+mywhileCounter+": bne "+expression+", "+oneReg+", AfterWhile"+mywhileCounter);
+		int currentWhileNo = mywhileCounter;
 		mywhileCounter++;
 		myWhile.stmt.accept(this);
 		Register check = myWhile.expr.accept(this);
 		writer.println("move "+expression+", "+check);
-		writer.println("j MyWhile"+(mywhileCounter-1));
-		writer.println("AfterWhile"+(mywhileCounter-1)+": ");
+		writer.println("j MyWhile"+currentWhileNo);
+		writer.println("AfterWhile"+currentWhileNo+": ");
 		freeRegister(oneReg);
 		freeRegister(expression);
 		return null;
