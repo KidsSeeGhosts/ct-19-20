@@ -338,6 +338,21 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	public Register visitBinOp(BinOp binOp) {
 		//System.out.println("in bin op");
 		Register lhsReg = binOp.lhs.accept(this);
+		if(binOp.op.equals(Op.OR)) {
+			Register result = getRegister();
+			writer.println("beq "+lhsReg+", 1 TrueOR"+binOpLabelCounter);
+			Register rhsReg = binOp.lhs.accept(this);
+			writer.println("beq "+rhsReg+",1 TrueOR"+binOpLabelCounter);
+			writer.println("li "+result+", 0");
+			writer.println("j AfterOR"+binOpLabelCounter);
+			writer.println("TrueOR"+binOpLabelCounter+": ");
+			writer.println("li "+result+", 1");
+			writer.println("AfterOR"+binOpLabelCounter+": ");
+			freeRegister (lhsReg );
+			freeRegister (rhsReg ); 
+			binOpLabelCounter++;
+			return result ;
+		}
 		if(binOp.lhs instanceof VarExpr){
 			writer.println("lw "+lhsReg+", ("+lhsReg+")");//if it's a variable expression it will be an address
 		}
@@ -414,15 +429,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				writer.println("li "+result+", 1");
 				writer.println("AfterNotEqualTo"+binOpLabelCounter+":");
 				break;
-			case OR:
-				writer.println("beq "+lhsReg+", 1 TrueOR"+binOpLabelCounter);
-				writer.println("beq "+rhsReg+",1 TrueOR"+binOpLabelCounter);
-				writer.println("li "+result+", 0");
-				writer.println("j AfterOR"+binOpLabelCounter);
-				writer.println("TrueOR"+binOpLabelCounter+": ");
-				writer.println("li "+result+", 1");
-				writer.println("AfterOR"+binOpLabelCounter+": ");
-				break;
+//			case OR:
+//				writer.println("beq "+lhsReg+", 1 TrueOR"+binOpLabelCounter);
+//				writer.println("beq "+rhsReg+",1 TrueOR"+binOpLabelCounter);
+//				writer.println("li "+result+", 0");
+//				writer.println("j AfterOR"+binOpLabelCounter);
+//				writer.println("TrueOR"+binOpLabelCounter+": ");
+//				writer.println("li "+result+", 1");
+//				writer.println("AfterOR"+binOpLabelCounter+": ");
+//				break;
 			case SUB:
 				writer.println("sub "+result+", "+lhsReg+", "+rhsReg);
 				break;
