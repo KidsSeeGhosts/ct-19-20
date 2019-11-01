@@ -1,11 +1,14 @@
-#include "minic-stdlib.h"
+
+struct yolo{
+    int x;
+    char y;
+    int list[5];
+};
+
+struct yolo x;
 
 void main(){
-    int x;
-    int y;
-    x=5;
-    y=1;
-    if ((x==5) || (y==1)){
-        print_i(x);
-    }
+    x.x=5;
+    print_i(x.x);
+    
 }

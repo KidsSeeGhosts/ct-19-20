@@ -11,6 +11,7 @@ public class StructTypeDecl implements ASTNode {
 	
 	public final StructType structType;
 	public final List<VarDecl> varDecls;
+	public int structSize;
 	
 	public StructTypeDecl(StructType structType, List<VarDecl> varDecls) {
 		this.structType=structType;

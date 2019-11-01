@@ -4,7 +4,9 @@ public class VarDecl implements ASTNode {
     public final Type type;
     public final String varName;
     public int stackOffset;
+    public int structOffset;
     public int stackOffSetWordSize;
+    public int structOffSetWordSize;
     public String localOrGlobal;
 
     public VarDecl(Type type, String varName) {

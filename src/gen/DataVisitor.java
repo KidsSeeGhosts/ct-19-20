@@ -100,11 +100,38 @@ public class DataVisitor implements ASTVisitor<Register>{
 
     @Override //StructTypeDecl ::= StructType VarDecl*
     public Register visitStructTypeDecl(StructTypeDecl st) {
-        // to complete ...
+
+//
+//		VarDecl structName = new VarDecl(st.structType, st.structType.string);//the name of the struct is now a variable
+//		structName.localOrGlobal="struct";
+//		VarExpr structVar = new VarExpr(st.structType.string);
+    		int structSpace = 0;
     		st.structType.accept(this);
     		for (VarDecl vd : st.varDecls) {//copying varDecls thing from program printer given
-                vd.accept(this);
-            }
+        		if(vd.type==BaseType.INT) {
+        			vd.structOffset=structSpace;
+        			structSpace=structSpace-4;//4 bytes for an int word
+        			vd.structOffSetWordSize = 4;
+        		}
+        		if(vd.type==BaseType.CHAR) {
+        			vd.structOffset=structSpace;
+        			structSpace=structSpace-4;//4 bytes for an char word
+        			vd.structOffSetWordSize = 4;
+        		}
+        		if (vd.type instanceof PointerType) {
+        			vd.structOffset=structSpace;
+        			structSpace=structSpace-4;//4 bytes for a pointer word
+        			vd.structOffSetWordSize = 4;
+        		}
+        		if (vd.type instanceof ArrayType) {
+        			ArrayType myarray = (ArrayType) vd.type;
+        			vd.structOffset=structSpace;
+        			structSpace=structSpace-(myarray.i*4);//4 bytes for each item in array
+        			vd.structOffSetWordSize = (myarray.i*4);
+        		}
+        }
+    		st.structSize=structSpace;
+    		writer.println(st.structType.string+": .space "+(-structSpace));
         return null;
     }
 
