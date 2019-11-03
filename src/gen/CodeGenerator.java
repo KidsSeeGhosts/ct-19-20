@@ -373,13 +373,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			return resultReg;
 		}
 		else {
-//			writer.println("sub $sp, $sp, 4");
-//			writer.println("sw $fp ($sp)");
-//			writer.println("sub $sp, $sp, 4");
-//			Register ra = getRegister();
-//			writer.println("la "+ra+",($ra)");
-//			writer.println("sw "+ra+", ($sp)");
-//			freeRegister(ra);
+			writer.println("sub $sp, $sp, 4");//push frame pointer on to the stack
+			writer.println("sw $fp ($sp)");
 			int argsoffset = 0;
 			if (!funCallExpr.expressions.isEmpty()) {//Before we call a function, put the arguments in the right place in the stack for that function.
 				
@@ -404,12 +399,16 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			}
 			writer.println("add $sp, $sp, "+argsoffset);//this allows funcallexpr to work perfectly
 			writer.println("jal "+funCallExpr.string);
+			writer.println("lw $fp ($sp)");
+			writer.println("add $sp, $sp, 4");
+			
 		}
 		return resultReg;
 	}
 
 	@Override
 	public Register visitBinOp(BinOp binOp) {
+		//System.out.println("in bin op");
 		Register lhsReg = binOp.lhs.accept(this);
 		if(binOp.lhs instanceof VarExpr || binOp.lhs instanceof ArrayAccessExpr || binOp.lhs instanceof FieldAccessExpr){
 			writer.println("lw "+lhsReg+", ("+lhsReg+")");//if it's a variable expression it will be an address
@@ -459,12 +458,25 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		}
 		Register result = getRegister();
 		switch(binOp.op) {
+		//add $s0, $s1, $s2    s0 = g + h   where f = g+h where f is s0, g is s1 and h is s2
 			case ADD:
 				writer.println("add "+result+", "+lhsReg+", "+rhsReg);
 				break ;
 			case MUL:
 				writer.println("mul "+result+", "+lhsReg+", "+rhsReg); 
 				break ;
+//			case AND:
+//				writer.println("beq " +lhsReg+", "+1+", LHStrue"+binOpLabelCounter);
+//				writer.println("li "+result+", 0");
+//				writer.println("j AfterAND"+binOpLabelCounter);
+//				writer.println("LHStrue"+binOpLabelCounter+": ");
+//				writer.println("beq " +rhsReg+", "+1+", RHStrue"+binOpLabelCounter);
+//				writer.println("li "+result+", 0");
+//				writer.println("j AfterAND"+binOpLabelCounter);
+//				writer.println("RHStrue"+binOpLabelCounter+": ");
+//				writer.println("li "+result+", 1");
+//				writer.println("AfterAND"+binOpLabelCounter+": ");
+//				break;
 			case DIV:
 				writer.println("div "+lhsReg+", "+rhsReg); 
 				writer.println("mflo "+result);//gets the integer quotient
@@ -513,6 +525,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				writer.println("li "+result+", 1");
 				writer.println("AfterNotEqualTo"+binOpLabelCounter+":");
 				break;
+//			case OR:
+//				writer.println("beq "+lhsReg+", 1 TrueOR"+binOpLabelCounter);
+//				writer.println("beq "+rhsReg+",1 TrueOR"+binOpLabelCounter);
+//				writer.println("li "+result+", 0");
+//				writer.println("j AfterOR"+binOpLabelCounter);
+//				writer.println("TrueOR"+binOpLabelCounter+": ");
+//				writer.println("li "+result+", 1");
+//				writer.println("AfterOR"+binOpLabelCounter+": ");
+//				break;
 			case SUB:
 				writer.println("sub "+result+", "+lhsReg+", "+rhsReg);
 				break;
