@@ -7,6 +7,8 @@ public class FunDecl implements ASTNode {
     public final String  name;
     public final List<VarDecl> vardecls;
     public final Block block;
+	public int stackOffset;
+	public int finalframeoffset;
 
     public FunDecl(Type type, String name, List<VarDecl> vardecls, Block block) {
 	    this.type = type;

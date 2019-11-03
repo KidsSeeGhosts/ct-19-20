@@ -3,9 +3,9 @@ package ast;
 public class VarDecl implements ASTNode {
     public final Type type;
     public final String varName;
-    public int stackOffset;
+    public int frameoffset;
     public int structOffset;
-    public int stackOffSetWordSize;
+    public int wordsize;
     public int structOffSetWordSize;
     public String localOrGlobal;
 

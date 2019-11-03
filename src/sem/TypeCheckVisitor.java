@@ -270,6 +270,22 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 				//VarExpr currentvarexp = (VarExpr) exp;//decent beta version but the problem is we don't know they're all gonna be var expressions
 				Type currentVarType = exp.accept(this);//this will return a type
 				Type currentargType = functionargs.get(index).type;
+				if (exp.accept(this) instanceof ArrayType) {
+					ArrayType myarraytype = (ArrayType) currentVarType;
+					currentVarType = myarraytype.type;
+				}
+				if (functionargs.get(index).type instanceof ArrayType) {
+					ArrayType myarraytype = (ArrayType) currentargType;
+					currentargType = myarraytype.type;
+				}
+				if (exp.accept(this) instanceof PointerType) {
+					PointerType mypointertype = (PointerType) currentVarType;
+					currentVarType = mypointertype.type;
+				}
+				if (functionargs.get(index).type instanceof PointerType) {
+					PointerType mypointertype = (PointerType) currentargType;
+					currentargType = mypointertype.type;
+				}
 				if ((currentVarType instanceof PointerType) && (currentargType instanceof PointerType)) {//deals with pointers another layer of typing required
 					PointerType mypointervar = (PointerType) currentVarType.accept(this);
 					PointerType mypointerarg = (PointerType) currentargType.accept(this);

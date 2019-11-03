@@ -17,7 +17,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
     // contains all the free temporary registers
     private Stack<Register> freeRegs = new Stack<Register>();
     //private Stack<Register> usedRegs = new Stack<Register>();
-    private int stackOffset = 0;
 
     public CodeGenerator() {
         freeRegs.addAll(Register.tmpRegs);
@@ -44,6 +43,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
     private int mywhileCounter=1;
 	private String currentFunctionName;
 	private Register resultReg;//this will be t9
+	private int frameOffset =0;
+    private int stackoffset = 0;
+    private int gpoffset = 0;
 
 
 
@@ -73,7 +75,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	    	for (VarDecl vd : b.varDecls) {
 	            vd.accept(this);
 	        }
-	    	//System.out.println("finished var decls in block");
 	        for (Stmt stmt : b.stmts) {
 	        		if(stmt instanceof Return) {
 	        			stmt.accept(this);
@@ -86,34 +87,35 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitFunDecl(FunDecl fd) {
-    		int stackLocation = -stackOffset;
-    		stackOffset=stackOffset-4;
-    		writer.println("	"+fd.name+":");//function name is a label
-			if (!(fd.name.equals("main"))){
-				Register raStoring = getRegister(); 
-				writer.println(	"move "+raStoring +", $ra");
-				writer.println("sw "+raStoring+", "+stackLocation+"($sp)");
-				freeRegister(raStoring);
-			}
-        fd.type.accept(this);//will return a register'
-        if (!fd.vardecls.isEmpty()){
-	        	for (VarDecl vd : fd.vardecls) {
-	                vd.accept(this);
-	            }
-	            fd.block.accept(this);
-	            return null;
-        }
-        //System.out.println("about to do block");
-        fd.block.accept(this);
-        writer.println(fd.name+"End:");
-        if (!(fd.name.equals("main"))){
-        		Register raRetrieving = getRegister(); 
-        		writer.println("lw "+raRetrieving+", "+stackLocation+"($sp)");
-        		writer.println("move $ra, "+raRetrieving);
-        		writer.println("jr $ra");
-        		freeRegister(raRetrieving);
-        }
-        writer.print("");
+    	writer.println("	"+fd.name+":");
+
+		frameOffset=4;
+		writer.println("move $fp $sp");
+    	if (!(fd.name.equals("main"))){
+		Register raStoring = getRegister(); 
+		writer.println(	"move "+raStoring +", $ra");
+		writer.println("sw "+raStoring+", "+0+"($fp)");
+		freeRegister(raStoring);
+    	}
+    	        fd.type.accept(this);
+    	        if (!fd.vardecls.isEmpty()){
+    		        	for (VarDecl vd : fd.vardecls) {
+    		                vd.accept(this);
+    		            }
+    	        }
+    	        fd.block.accept(this);
+    	        writer.println(fd.name+"End:");
+    	        fd.finalframeoffset=frameOffset;
+    	        writer.println("move $sp, $fp");//pop all variables off the sp
+    	        if (!(fd.name.equals("main"))){
+    	        	Register raRetrieving = getRegister(); 
+            		writer.println("lw "+raRetrieving+", "+0+"($fp)");
+            		writer.println("move $ra, "+raRetrieving);
+            		writer.println("jr $ra");
+            		freeRegister(raRetrieving);
+
+            }
+            writer.print("");
         return null;
     }
 
@@ -172,36 +174,35 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	@Override
     public Register visitVarDecl(VarDecl vd) {
 		vd.localOrGlobal="local";
-    		if(vd.type==BaseType.INT) {
-    			vd.stackOffset=stackOffset;
-    			stackOffset=stackOffset-4;//4 bytes for an int word
-    			vd.stackOffSetWordSize = 4;
-    		}
-    		if(vd.type==BaseType.CHAR) {
-    			vd.stackOffset=stackOffset;
-    			stackOffset=stackOffset-4;//4 bytes for a char word
-    			vd.stackOffSetWordSize = 4;
-    		}
-    		if (vd.type instanceof PointerType) {
-    			vd.stackOffset=stackOffset;
-    			stackOffset=stackOffset-4;//4 bytes for a pointer
-    			vd.stackOffSetWordSize = 4;
-    		}
-    		if (vd.type instanceof ArrayType) {
-    			ArrayType myarray = (ArrayType) vd.type;
-    			vd.stackOffset=stackOffset;
-    			stackOffset=stackOffset-(myarray.i*4);//4 bytes for each item in array
-    			vd.stackOffSetWordSize = (myarray.i*4);
-    		}
-    		//Register varReg = getRegister();
-    		//usedRegs.push(varReg);//pushing it onto my stack
+		if (vd.type instanceof ArrayType) {
+			ArrayType myarray = (ArrayType) vd.type;
+			vd.frameoffset=frameOffset;
+			vd.wordsize = (myarray.i*4);
+			frameOffset=frameOffset+(myarray.i*4);
+			stackoffset=stackoffset-(myarray.i*4);
+			writer.println("addi $sp,$sp,-"+(myarray.i*4));
+			return null;
+		}
+		if (vd.type instanceof StructType) {
+			StructType mystruct = (StructType) vd.type;
+			vd.frameoffset=frameOffset;
+			vd.wordsize = mystruct.std.structSize;
+			frameOffset=frameOffset+(mystruct.std.structSize);
+			stackoffset=stackoffset-(mystruct.std.structSize);
+
+			writer.println("addi $sp,$sp,-"+mystruct.std.structSize);
+			return null;
+		}
+    		vd.frameoffset=frameOffset;//characters, ints are all 4
+    		vd.wordsize = 4;
+    		frameOffset=frameOffset+4;
+    		stackoffset=stackoffset-4;
+    		writer.println("addi $sp,$sp,-4");
         return null;
     }
 
     
 
-//loadI @x → r1  load the address of x into r1
-//loadA r1 → r2  now value of x is in r2
     @Override
     public Register visitVarExpr(VarExpr v) {//this should return a register with the variable's location in memory
     		if (v.type instanceof StructType) {
@@ -212,7 +213,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
     		}
     		if (v.vd.localOrGlobal.equals("local")) {
 		    	Register result = getRegister ();
-		    	writer.println("la "+result+", "+((-stackOffset)-v.vd.stackOffset-v.vd.stackOffSetWordSize)+"($sp)");
+		    	writer.println("la "+result+", "+-v.vd.frameoffset+"($fp)");
 		    	return result;
     		}
     		if (v.vd.localOrGlobal.equals("global")) {
@@ -225,7 +226,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitPointerType(PointerType pt) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -236,16 +236,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitArrayType(ArrayType arrayType) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
-	//loadI 3 →r1 is what should be printed
 	@Override
 	public Register visitIntLiteral(IntLiteral intLiteral) {
-		//System.out.println("in visit int literal");
 		Register result = getRegister (); 
-		//System.out.println(result);
 		writer.println("li "+ result.toString()+" "+intLiteral.i); 
 		return result ;
 	}
@@ -270,13 +266,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitFunCallExpr(FunCallExpr funCallExpr) {
-		//System.out.println("inside fun call expr");
 		if(funCallExpr.string.equals("print_i")) {
 			Register numberRegister = funCallExpr.expressions.get(0).accept(this);
 			if (funCallExpr.expressions.get(0) instanceof FunCallExpr) {
 				writer.println("li $v0, 1");
 				writer.println("move $a0, "+resultReg);
 				writer.println("syscall");
+				freeRegister(numberRegister);
 				return resultReg;
 			}
 			if(funCallExpr.expressions.get(0) instanceof VarExpr || funCallExpr.expressions.get(0) instanceof ArrayAccessExpr || funCallExpr.expressions.get(0) instanceof FieldAccessExpr){
@@ -294,6 +290,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				writer.println("li $v0, 4");
 				writer.println("move $a0, "+resultReg);
 				writer.println("syscall");
+				freeRegister(stringRegister);
 				return resultReg;
 			}
 			if(funCallExpr.expressions.get(0) instanceof VarExpr || funCallExpr.expressions.get(0) instanceof FieldAccessExpr){
@@ -304,6 +301,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				if (mytypecast.expr instanceof StrLiteral) {
 					writer.println("li $v0, 4");
 					writer.println("move $a0, "+stringRegister);
+					freeRegister(stringRegister);
 					writer.println("syscall");
 					return null;
 				}
@@ -338,6 +336,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				writer.println("li $v0, 11");
 				writer.println("move $a0, "+resultReg);
 				writer.println("syscall");
+				freeRegister(charRegister);
 				return resultReg;
 			}
 			if(funCallExpr.expressions.get(0) instanceof VarExpr || funCallExpr.expressions.get(0) instanceof ArrayAccessExpr  || funCallExpr.expressions.get(0) instanceof FieldAccessExpr){
@@ -362,9 +361,48 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			return resultReg;
 		}
 		if (funCallExpr.string.equals("mcmalloc")){
-			
+			Register numberRegister = funCallExpr.expressions.get(0).accept(this);
+			if(funCallExpr.expressions.get(0) instanceof VarExpr || funCallExpr.expressions.get(0) instanceof ArrayAccessExpr || funCallExpr.expressions.get(0) instanceof FieldAccessExpr){
+				writer.println("lw "+numberRegister+", ("+numberRegister+")");//if it's a variable expression it will be an address
+			}
+			writer.println("move $a0, "+numberRegister);
+			freeRegister(numberRegister);
+			writer.println("li $v0, 9");
+			writer.println("syscall");
+			writer.println( "move "+ resultReg+", $v0");
+			return resultReg;
 		}
 		else {
+//			writer.println("sub $sp, $sp, 4");
+//			writer.println("sw $fp ($sp)");
+//			writer.println("sub $sp, $sp, 4");
+//			Register ra = getRegister();
+//			writer.println("la "+ra+",($ra)");
+//			writer.println("sw "+ra+", ($sp)");
+//			freeRegister(ra);
+			int argsoffset = 0;
+			if (!funCallExpr.expressions.isEmpty()) {//Before we call a function, put the arguments in the right place in the stack for that function.
+				
+				for (Expr e : funCallExpr.expressions) {//getting the arguments
+					Register exp = getRegister();
+					exp =  e.accept(this);
+					if(e instanceof VarExpr || e instanceof ArrayAccessExpr || e instanceof FieldAccessExpr){
+						writer.println("lw "+exp+", ("+exp+")");//if it's a variable expression it will be an address
+					}
+					if (e.type instanceof BaseType || e.type instanceof PointerType) {
+						pushToStack(exp,4);
+						freeRegister(exp);
+						argsoffset=argsoffset+4;
+					}
+					if (e.type instanceof ArrayType) {
+						ArrayType myarray = (ArrayType) e.type;
+						pushToStack(exp,myarray.i*4);
+						freeRegister(exp);
+						argsoffset=argsoffset+(myarray.i*4);
+					}
+				}
+			}
+			writer.println("add $sp, $sp, "+argsoffset);//this allows funcallexpr to work perfectly
 			writer.println("jal "+funCallExpr.string);
 		}
 		return resultReg;
@@ -372,7 +410,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitBinOp(BinOp binOp) {
-		//System.out.println("in bin op");
 		Register lhsReg = binOp.lhs.accept(this);
 		if(binOp.lhs instanceof VarExpr || binOp.lhs instanceof ArrayAccessExpr || binOp.lhs instanceof FieldAccessExpr){
 			writer.println("lw "+lhsReg+", ("+lhsReg+")");//if it's a variable expression it will be an address
@@ -422,25 +459,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		}
 		Register result = getRegister();
 		switch(binOp.op) {
-		//add $s0, $s1, $s2    s0 = g + h   where f = g+h where f is s0, g is s1 and h is s2
 			case ADD:
 				writer.println("add "+result+", "+lhsReg+", "+rhsReg);
 				break ;
 			case MUL:
 				writer.println("mul "+result+", "+lhsReg+", "+rhsReg); 
 				break ;
-//			case AND:
-//				writer.println("beq " +lhsReg+", "+1+", LHStrue"+binOpLabelCounter);
-//				writer.println("li "+result+", 0");
-//				writer.println("j AfterAND"+binOpLabelCounter);
-//				writer.println("LHStrue"+binOpLabelCounter+": ");
-//				writer.println("beq " +rhsReg+", "+1+", RHStrue"+binOpLabelCounter);
-//				writer.println("li "+result+", 0");
-//				writer.println("j AfterAND"+binOpLabelCounter);
-//				writer.println("RHStrue"+binOpLabelCounter+": ");
-//				writer.println("li "+result+", 1");
-//				writer.println("AfterAND"+binOpLabelCounter+": ");
-//				break;
 			case DIV:
 				writer.println("div "+lhsReg+", "+rhsReg); 
 				writer.println("mflo "+result);//gets the integer quotient
@@ -489,15 +513,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				writer.println("li "+result+", 1");
 				writer.println("AfterNotEqualTo"+binOpLabelCounter+":");
 				break;
-//			case OR:
-//				writer.println("beq "+lhsReg+", 1 TrueOR"+binOpLabelCounter);
-//				writer.println("beq "+rhsReg+",1 TrueOR"+binOpLabelCounter);
-//				writer.println("li "+result+", 0");
-//				writer.println("j AfterOR"+binOpLabelCounter);
-//				writer.println("TrueOR"+binOpLabelCounter+": ");
-//				writer.println("li "+result+", 1");
-//				writer.println("AfterOR"+binOpLabelCounter+": ");
-//				break;
 			case SUB:
 				writer.println("sub "+result+", "+lhsReg+", "+rhsReg);
 				break;
@@ -516,9 +531,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		Register myvarxpr = arrayAccessExpr.expr1.accept(this);
 		writer.println("mul "+arrayPosition+", "+arrayPosition+", 4");
 		writer.println("add "+myvarxpr+", "+myvarxpr+", "+arrayPosition);
+		freeRegister(arrayPosition);
 		Register result = getRegister ();
 		writer.println("la "+result+", ("+myvarxpr+")");
-		freeRegister(arrayPosition);
 		freeRegister(myvarxpr);
 		return result;
 	}
@@ -533,7 +548,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			for (VarDecl vd : mystruct.std.varDecls) {
 				if (vd.varName.equals(fieldAccessExpr.string)){//we find the variable inside the struct
 					Register varInStruct = getRegister();
-			    	writer.println("la "+varInStruct+", "+(-(mystruct.std.structSize-vd.structOffSetWordSize))+"("+structAddress+")");
+			    	writer.println("la "+varInStruct+", "+-vd.structOffset+"("+structAddress+")");
 			    	freeRegister(structAddress);
 			    	return varInStruct;
 				}
@@ -544,13 +559,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitValueAtExpr(ValueAtExpr valueAtExpr) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Register visitSizeOfExpr(SizeOfExpr sizeOfExpr) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -564,9 +577,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	@Override
 	public Register visitWhile(While myWhile) {
 		Register expression = myWhile.expr.accept(this);
-		Register oneReg = getRegister();
-		writer.println("li "+oneReg+", 1");
-		writer.println("MyWhile"+mywhileCounter+": bne "+expression+", "+oneReg+", AfterWhile"+mywhileCounter);
+		writer.println("MyWhile"+mywhileCounter+": beq "+expression+", "+0+", AfterWhile"+mywhileCounter);
 		int currentWhileNo = mywhileCounter;
 		mywhileCounter++;
 		myWhile.stmt.accept(this);
@@ -574,7 +585,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		writer.println("move "+expression+", "+check);
 		writer.println("j MyWhile"+currentWhileNo);
 		writer.println("AfterWhile"+currentWhileNo+": ");
-		freeRegister(oneReg);
 		freeRegister(expression);
 		return null;
 	}
@@ -582,9 +592,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	@Override
 	public Register visitIf(If myIf) {
 		Register expression = myIf.expr.accept(this);
-		Register oneReg = getRegister();
-		writer.println("li "+oneReg+", 1");
-		writer.println("bne "+expression+", "+oneReg+", AfterIf"+myifCounter);
+		writer.println("beq "+expression+", 0, "+"AfterIf"+myifCounter);
 		myIf.stmt.accept(this);
 		writer.println("j AfterIfElse"+myifCounter);
 		int afterifelse = myifCounter;
@@ -594,7 +602,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			myIf.optStmt.accept(this);
 		}
 		writer.println("AfterIfElse"+afterifelse+":");
-		freeRegister(oneReg);
 		freeRegister(expression);
 		return null;
 	}
@@ -605,15 +612,16 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		Register rhs = assign.expr2.accept(this);
 		if (assign.expr2 instanceof FunCallExpr) {
 			writer.println("sw "+resultReg+", ("+lhs+")");
+			freeRegister(rhs);
 			return lhs;
 		}
 		if (assign.expr2 instanceof VarExpr) {
 			writer.println("lw "+rhs+", ("+rhs+")");
-			writer.println("sw "+rhs+", ("+lhs+")"); //put 6 into y
+			writer.println("sw "+rhs+", ("+lhs+")");
 			freeRegister(rhs);
 			return lhs;
 		}
-		writer.println("sw "+rhs+", ("+lhs+")"); //put 6 into y
+		writer.println("sw "+rhs+", ("+lhs+")");
 		freeRegister(rhs);
 		return lhs;
 	}
@@ -644,4 +652,16 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		writer.println("j "+currentFunctionName+"End");
 		return null;
 	}
+	
+	public void pushToStack(Register r, int i) {
+		writer.println("addi $sp,$sp,-"+i);
+		writer.println("sw "+r+", ($sp)");
+	}
+	public void popFromStack(Register r) {
+		writer.println("lw "+r+" ,($sp)");
+		writer.println("addiu $sp,$sp,4");
+	}
+	
+	
 }
+
