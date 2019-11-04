@@ -16,7 +16,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     // contains all the free temporary registers
     private Stack<Register> freeRegs = new Stack<Register>();
-    //private Stack<Register> usedRegs = new Stack<Register>();
 
     public CodeGenerator() {
         freeRegs.addAll(Register.tmpRegs);
@@ -89,13 +88,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitFunDecl(FunDecl fd) {
     	writer.println("	"+fd.name+":");
 
-		frameOffset=4;
+		frameOffset=0;
 		writer.println("move $fp $sp");
     	if (!(fd.name.equals("main"))){
-		Register raStoring = getRegister(); 
-		writer.println(	"move "+raStoring +", $ra");
-		writer.println("sw "+raStoring+", "+0+"($fp)");
-		freeRegister(raStoring);
     	}
     	        fd.type.accept(this);
     	        if (!fd.vardecls.isEmpty()){
@@ -108,11 +103,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
     	        fd.finalframeoffset=frameOffset;
     	        writer.println("move $sp, $fp");//pop all variables off the sp
     	        if (!(fd.name.equals("main"))){
-    	        	Register raRetrieving = getRegister(); 
-            		writer.println("lw "+raRetrieving+", "+0+"($fp)");
-            		writer.println("move $ra, "+raRetrieving);
+    	        	//Register raRetrieving = getRegister(); 
+            		//writer.println("lw "+raRetrieving+", "+0+"($fp)");
+            		//writer.println("move $ra, "+raRetrieving);
             		writer.println("jr $ra");
-            		freeRegister(raRetrieving);
+            		//freeRegister(raRetrieving);
 
             }
             writer.print("");
@@ -373,11 +368,20 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			return resultReg;
 		}
 		else {
-			writer.println("sub $sp, $sp, 4");//push frame pointer on to the stack
-			writer.println("sw $fp ($sp)");
+
+			pushToStack(Register.fp,4);
+			pushToStack(Register.ra,4);
+			Stack<Register> regsUsedInThisFunction = new Stack<Register>();
+						for (Register r : Register.tmpRegs) {
+							if (!(freeRegs.contains(r))) {
+								if (!(r.equals(resultReg))){
+									pushToStack(r,4);
+									regsUsedInThisFunction.push(r);
+								}
+							}
+						}
 			int argsoffset = 0;
 			if (!funCallExpr.expressions.isEmpty()) {//Before we call a function, put the arguments in the right place in the stack for that function.
-				
 				for (Expr e : funCallExpr.expressions) {//getting the arguments
 					Register exp = getRegister();
 					exp =  e.accept(this);
@@ -397,11 +401,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
 					}
 				}
 			}
-			writer.println("add $sp, $sp, "+argsoffset);//this allows funcallexpr to work perfectly
+			//writer.println("add $sp, $sp, "+(argsoffset));//this allows funcallexpr to work perfectly
 			writer.println("jal "+funCallExpr.string);
-			writer.println("lw $fp ($sp)");
-			writer.println("add $sp, $sp, 4");
-			
+			writer.println("add $sp, $sp, "+argsoffset);
+			while (!(regsUsedInThisFunction.isEmpty())) {
+						Register currentReg = regsUsedInThisFunction.pop();
+						popFromStack(currentReg);
+					}
+			popFromStack(Register.ra);
+			popFromStack(Register.fp);
 		}
 		return resultReg;
 	}
@@ -541,7 +549,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				break;
 		} 
 		freeRegister (lhsReg );
-		freeRegister (rhsReg ); 
+		freeRegister (rhsReg );
 		binOpLabelCounter++;
 		return result ;
 	}
