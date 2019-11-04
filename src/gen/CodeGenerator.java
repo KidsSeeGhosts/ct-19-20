@@ -88,7 +88,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitFunDecl(FunDecl fd) {
     	writer.println("	"+fd.name+":");
 
-		frameOffset=0;
+		frameOffset=-4;
 		writer.println("move $fp $sp");
     	if (!(fd.name.equals("main"))){
     	}
