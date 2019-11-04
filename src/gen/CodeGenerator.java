@@ -88,7 +88,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitFunDecl(FunDecl fd) {
     	writer.println("	"+fd.name+":");
 
-		frameOffset=-4;
+		frameOffset=0;
 		writer.println("move $fp $sp");
     	if (!(fd.name.equals("main"))){
     	}
@@ -401,9 +401,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
 					}
 				}
 			}
-			//writer.println("add $sp, $sp, "+(argsoffset));//this allows funcallexpr to work perfectly
+			writer.println("add $sp, $sp, "+(argsoffset-4));//this allows funcallexpr to work perfectly
 			writer.println("jal "+funCallExpr.string);
-			writer.println("add $sp, $sp, "+argsoffset);
+			writer.println("add $sp, $sp, "+(argsoffset-(argsoffset-4)));
 			while (!(regsUsedInThisFunction.isEmpty())) {
 						Register currentReg = regsUsedInThisFunction.pop();
 						popFromStack(currentReg);
@@ -693,4 +693,5 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	
 	
 }
+
 
