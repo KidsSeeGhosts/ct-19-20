@@ -132,7 +132,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             			writer.println(vd.varName+": .word 0");
         			}
         			if(mybt.equals(BaseType.CHAR)) {
-            			writer.println(vd.varName+": .byte 1");
+            			writer.println(vd.varName+": .word 0");//this used to be .byte 1
         			}
         		}
         		if(vd.type instanceof PointerType){
@@ -253,10 +253,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	public Register visitChrLiteral(ChrLiteral chrLiteral) {
 		Register result = getRegister (); 
 		if (chrLiteral.escC!='z') {
-			writer.println("li "+ result+" '\\"+chrLiteral.escC+"'"); 
+			writer.println("la "+ result+" '\\"+chrLiteral.escC+"'"); 
 			return result;
 		}
-		writer.println("li "+ result+" '"+chrLiteral.c+"'"); 
+		writer.println("la "+ result+" '"+chrLiteral.c+"'"); 
 		return result;
 	}
 
