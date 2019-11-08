@@ -395,7 +395,8 @@ writer.println("#pushing regs");
 						for (Register r : Register.tmpRegs) {
 							if (!(freeRegs.contains(r))) {
 								if (!(r.equals(resultReg))){
-									//System.out.println(r);
+									System.out.println(r);
+									writer.println("#push to stack");
 									pushToStack(r,4);
 									freeRegister(r);
 									regsUsedInThisFunction.push(r);
@@ -407,11 +408,12 @@ writer.println("#pushing regs");
 			int argsoffset = 0;
 			if (!funCallExpr.expressions.isEmpty()) {//Before we call a function, put the arguments in the right place in the stack for that function.
 				for (Expr e : funCallExpr.expressions) {//getting the arguments
+
+					writer.println("#Argument "+e.toString());
 					Register exp = e.accept(this);
 					if(e instanceof VarExpr || e instanceof ArrayAccessExpr || e instanceof FieldAccessExpr){
 						writer.println("lw "+exp+", ("+exp+")");//if it's a variable expression it will be an address
 					}
-					writer.println("#"+e.toString());
 					if (e.type instanceof BaseType || e.type instanceof PointerType || e instanceof BinOp) {
 						pushToStack(exp,4);
 						freeRegister(exp);
@@ -423,6 +425,7 @@ writer.println("#pushing regs");
 						freeRegister(exp);
 						argsoffset=argsoffset+(myarray.i*4);
 					}
+					
 				}
 			}
 			writer.println("add $sp, $sp, "+(argsoffset-4));//this allows funcallexpr to work perfectly
@@ -434,6 +437,7 @@ writer.println("#pushing regs");
 					}
 			popFromStack(Register.ra);
 			popFromStack(Register.fp);
+			writer.println("#end of function call expression");
 		}
 		return resultReg;
 	}
@@ -624,7 +628,6 @@ writer.println("#pushing regs");
 		myifCounter++;
 		Register expression = myIf.expr.accept(this);
 		writer.println("beq "+expression+", 0, "+"AfterIf"+tmp);
-		freeRegister(expression);
 		//System.out.println(myIf.stmt);
 		myIf.stmt.accept(this);
 		writer.println("j AfterIfElse"+tmp);
@@ -634,14 +637,20 @@ writer.println("#pushing regs");
 			myIf.optStmt.accept(this);
 		}
 		writer.println("AfterIfElse"+tmp+":");
+		freeRegister(expression);
 		return null;
 	}
 
 	@Override
 	public Register visitAssign(Assign assign) {
-		Register lhs = assign.expr1.accept(this);
 		Register rhs = assign.expr2.accept(this);
+		Register lhs = assign.expr1.accept(this);
 //need to accommodate type cast expression
+//		if (assign.expr1 instanceof VarExpr) {
+//			VarExpr myvarexpr = (VarExpr) assign.expr1;
+//			System.out.println(myvarexpr.name);
+//			System.out.println(myvarexpr.vd.localOrGlobal);
+//		}
 		if (assign.expr2 instanceof FunCallExpr) {
 			writer.println("sw "+resultReg+", ("+lhs+")");
 			freeRegister(rhs);
