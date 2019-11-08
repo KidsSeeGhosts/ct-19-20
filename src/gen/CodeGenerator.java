@@ -72,7 +72,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
     public Register visitBlock(Block b) {
 	    	for (VarDecl vd : b.varDecls) {
-	    			System.out.println("visiting var decl in block");
+	    			//System.out.println("visiting var decl in block");
 	            vd.accept(this);
 	        }
 	        for (Stmt stmt : b.stmts) {
@@ -395,7 +395,7 @@ writer.println("#pushing regs");
 						for (Register r : Register.tmpRegs) {
 							if (!(freeRegs.contains(r))) {
 								if (!(r.equals(resultReg))){
-									System.out.println(r);
+									//System.out.println(r);
 									pushToStack(r,4);
 									freeRegister(r);
 									regsUsedInThisFunction.push(r);
@@ -403,7 +403,7 @@ writer.println("#pushing regs");
 							}
 						}
 
-						System.out.println("end of regs");
+						//System.out.println("end of regs");
 			int argsoffset = 0;
 			if (!funCallExpr.expressions.isEmpty()) {//Before we call a function, put the arguments in the right place in the stack for that function.
 				for (Expr e : funCallExpr.expressions) {//getting the arguments
@@ -604,15 +604,16 @@ writer.println("#pushing regs");
 
 	@Override
 	public Register visitWhile(While myWhile) {
-		Register expression = myWhile.expr.accept(this);
-		writer.println("MyWhile"+mywhileCounter+": beq "+expression+", "+0+", AfterWhile"+mywhileCounter);
-		int currentWhileNo = mywhileCounter;
+		int tmp = mywhileCounter;
 		mywhileCounter++;
+		Register expression = myWhile.expr.accept(this);
+		writer.println("MyWhile"+tmp+": beq "+expression+", "+0+", AfterWhile"+tmp);
 		myWhile.stmt.accept(this);
 		Register check = myWhile.expr.accept(this);
 		writer.println("move "+expression+", "+check);
-		writer.println("j MyWhile"+currentWhileNo);
-		writer.println("AfterWhile"+currentWhileNo+": ");
+		freeRegister(expression);
+		writer.println("j MyWhile"+tmp);
+		writer.println("AfterWhile"+tmp+": ");
 		return null;
 	}
 
@@ -623,12 +624,12 @@ writer.println("#pushing regs");
 		Register expression = myIf.expr.accept(this);
 		writer.println("beq "+expression+", 0, "+"AfterIf"+tmp);
 		freeRegister(expression);
-		System.out.println(myIf.stmt);
+		//System.out.println(myIf.stmt);
 		myIf.stmt.accept(this);
 		writer.println("j AfterIfElse"+tmp);
 		writer.println("AfterIf"+tmp+":");
 		if (myIf.optStmt!=null){
-			System.out.println(myIf.optStmt);
+			//System.out.println(myIf.optStmt);
 			myIf.optStmt.accept(this);
 		}
 		writer.println("AfterIfElse"+tmp+":");
