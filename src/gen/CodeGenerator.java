@@ -201,23 +201,22 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitVarExpr(VarExpr v) {//this should return a register with the variable's location in memory
+    		Register result = getRegister();
     		if (v.type instanceof StructType) {
     			StructType mystruct = (StructType) v.type;
-    			Register result = getRegister ();
     			writer.println("la "+result+", "+mystruct.string);
 		    	return result;
     		}
     		if (v.vd.localOrGlobal.equals("local")) {
-		    	Register result = getRegister ();
 		    	writer.println("la "+result+", "+-v.vd.frameoffset+"($fp)");
 		    	return result;
     		}
     		if (v.vd.localOrGlobal.equals("global")) {
-    			Register result = getRegister ();
     			writer.println("la "+result+", "+v.name);
+    			writer.println("#just got register for global var expr address");
 		    	return result ;
     		}
-	    	return null ;
+	    	return result ;
     }
 
 	@Override
@@ -237,7 +236,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitIntLiteral(IntLiteral intLiteral) {
-		Register result = getRegister (); 
+		Register result = getRegister(); 
 		writer.println("li "+ result.toString()+" "+intLiteral.i); 
 		return result ;
 	}
@@ -395,7 +394,7 @@ writer.println("#pushing regs");
 						for (Register r : Register.tmpRegs) {
 							if (!(freeRegs.contains(r))) {
 								if (!(r.equals(resultReg))){
-									System.out.println(r);
+									//System.out.println(r);
 									writer.println("#push to stack");
 									pushToStack(r,4);
 									freeRegister(r);
@@ -446,6 +445,7 @@ writer.println("#pushing regs");
 	public Register visitBinOp(BinOp binOp) {
 		Register result = getRegister();
 		Register lhsReg = binOp.lhs.accept(this);
+		writer.println("#just accepted lhs of bin op");
 		if(binOp.lhs instanceof VarExpr || binOp.lhs instanceof ArrayAccessExpr || binOp.lhs instanceof FieldAccessExpr){
 			writer.println("lw "+lhsReg+", ("+lhsReg+")");//if it's a variable expression it will be an address
 		}
@@ -487,6 +487,7 @@ writer.println("#pushing regs");
 			return result ;
 		}
 		Register rhsReg = binOp.rhs.accept(this); 
+		writer.println("#just accepted rhs of bin op");
 		if(binOp.rhs instanceof VarExpr || binOp.rhs instanceof ArrayAccessExpr || binOp.rhs instanceof FieldAccessExpr){
 			writer.println("lw "+rhsReg+", ("+rhsReg+")");//if it's a variable expression it will be an address
 		}
@@ -502,12 +503,12 @@ writer.println("#pushing regs");
 				writer.println("mflo "+result);//gets the integer quotient
 				break;
 			case EQ:
-				writer.println("seq "+result+", " +lhsReg+", "+rhsReg);
-//				writer.println("li "+result+", 0");
-//				writer.println("j AfterEqualTo"+binOpLabelCounter);
-//				writer.println("EqualTo"+binOpLabelCounter+": ");
-//				writer.println("li "+result+", 1");
-//				writer.println("AfterEqualTo"+binOpLabelCounter+":");
+				writer.println("beq " +lhsReg+", "+rhsReg+", EqualTo"+binOpLabelCounter);
+				writer.println("li "+result+", 0");
+				writer.println("j AfterEqualTo"+binOpLabelCounter);
+				writer.println("EqualTo"+binOpLabelCounter+": ");
+				writer.println("li "+result+", 1");
+				writer.println("AfterEqualTo"+binOpLabelCounter+":");
 				break;
 			case GE:
 				writer.println("slt "+result+", "+rhsReg+", "+lhsReg); //returns 1 if left is greater than right 15>3
@@ -610,15 +611,16 @@ writer.println("#pushing regs");
 	public Register visitWhile(While myWhile) {
 		int tmp = mywhileCounter;
 		mywhileCounter++;
+		writer.println("MyWhile"+tmp+":");
 		Register expression = myWhile.expr.accept(this);
-		writer.println("MyWhile"+tmp+": beq "+expression+", "+0+", AfterWhile"+tmp);
+		if(myWhile.expr instanceof VarExpr || myWhile.expr instanceof ArrayAccessExpr || myWhile.expr instanceof FieldAccessExpr){
+			writer.println("lw "+expression+", ("+expression+")");//if it's a variable expression it will be an address
+		}
+		writer.println("beq "+expression+", "+0+", AfterWhile"+tmp);
+		freeRegister(expression);//this line was the final thing that fixed tic tac toe
 		myWhile.stmt.accept(this);
-		Register check = myWhile.expr.accept(this);
-		writer.println("move "+expression+", "+check);
 		writer.println("j MyWhile"+tmp);
 		writer.println("AfterWhile"+tmp+": ");
-		freeRegister(expression);
-		freeRegister(check);
 		return null;
 	}
 
@@ -627,36 +629,39 @@ writer.println("#pushing regs");
 		int tmp = myifCounter;
 		myifCounter++;
 		Register expression = myIf.expr.accept(this);
+		if(myIf.expr instanceof VarExpr || myIf.expr instanceof ArrayAccessExpr || myIf.expr instanceof FieldAccessExpr){
+			writer.println("lw "+expression+", ("+expression+")");//if it's a variable expression it will be an address
+		}
 		writer.println("beq "+expression+", 0, "+"AfterIf"+tmp);
+		freeRegister(expression);
 		//System.out.println(myIf.stmt);
 		myIf.stmt.accept(this);
 		writer.println("j AfterIfElse"+tmp);
 		writer.println("AfterIf"+tmp+":");
 		if (myIf.optStmt!=null){
-			//System.out.println(myIf.optStmt);
 			myIf.optStmt.accept(this);
 		}
 		writer.println("AfterIfElse"+tmp+":");
-		freeRegister(expression);
+		//freeRegister(expression);
 		return null;
 	}
 
 	@Override
 	public Register visitAssign(Assign assign) {
-		Register rhs = assign.expr2.accept(this);
-		Register lhs = assign.expr1.accept(this);
-//need to accommodate type cast expression
-//		if (assign.expr1 instanceof VarExpr) {
-//			VarExpr myvarexpr = (VarExpr) assign.expr1;
-//			System.out.println(myvarexpr.name);
-//			System.out.println(myvarexpr.vd.localOrGlobal);
-//		}
 		if (assign.expr2 instanceof FunCallExpr) {
-			writer.println("sw "+resultReg+", ("+lhs+")");
+			Register rhs = assign.expr2.accept(this);
+			Register lhs = assign.expr1.accept(this);
+			writer.println("sw "+rhs+", ("+lhs+")");
+			if(rhs.equals(resultReg)) {
+				freeRegister(lhs);
+				return null;
+			}
 			freeRegister(rhs);
 			freeRegister(lhs);
 			return null;
 		}
+		Register rhs = assign.expr2.accept(this);
+		Register lhs = assign.expr1.accept(this);
 		if (assign.expr2 instanceof VarExpr) {
 			writer.println("lw "+rhs+", ("+rhs+")");
 			writer.println("sw "+rhs+", ("+lhs+")");
