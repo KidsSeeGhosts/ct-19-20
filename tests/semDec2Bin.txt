@@ -4,6 +4,7 @@ int find(int decimal_number)
         return 0;
     else
         return (decimal_number % 2 + 10 * find(decimal_number / 2));
+    
 }
 
 // Driver code
