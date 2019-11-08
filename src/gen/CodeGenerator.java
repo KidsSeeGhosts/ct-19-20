@@ -611,9 +611,10 @@ writer.println("#pushing regs");
 		myWhile.stmt.accept(this);
 		Register check = myWhile.expr.accept(this);
 		writer.println("move "+expression+", "+check);
-		freeRegister(expression);
 		writer.println("j MyWhile"+tmp);
 		writer.println("AfterWhile"+tmp+": ");
+		freeRegister(expression);
+		freeRegister(check);
 		return null;
 	}
 
@@ -644,23 +645,27 @@ writer.println("#pushing regs");
 		if (assign.expr2 instanceof FunCallExpr) {
 			writer.println("sw "+resultReg+", ("+lhs+")");
 			freeRegister(rhs);
-			return lhs;
+			freeRegister(lhs);
+			return null;
 		}
 		if (assign.expr2 instanceof VarExpr) {
 			writer.println("lw "+rhs+", ("+rhs+")");
 			writer.println("sw "+rhs+", ("+lhs+")");
 			freeRegister(rhs);
-			return lhs;
+			freeRegister(lhs);
+			return null;
 		}
 		if (assign.expr2 instanceof ArrayAccessExpr) {
 			writer.println("lw "+rhs+", ("+rhs+")");
 			writer.println("sw "+rhs+", ("+lhs+")");
 			freeRegister(rhs);
-			return lhs;
+			freeRegister(lhs);
+			return null;
 		}
 		writer.println("sw "+rhs+", ("+lhs+")");
 		freeRegister(rhs);
-		return lhs;
+		freeRegister(lhs);
+		return null;
 	}
 
 	@Override

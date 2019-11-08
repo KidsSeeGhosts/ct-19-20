@@ -1,9 +1,11 @@
 int find(int decimal_number)
 {
-    if (decimal_number == 0)
+    if (decimal_number == 0){
         return 0;
-    else
+    }
+    else{
         return (decimal_number % 2 + 10 * find(decimal_number / 2));
+    }
     
 }
 
@@ -11,7 +13,7 @@ int find(int decimal_number)
 int main()
 {
     int decimal_number;
-    decimal_number=69;
+    decimal_number=10;
     print_i(find(decimal_number));
     return 0;
 }
