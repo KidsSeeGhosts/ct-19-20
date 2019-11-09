@@ -561,20 +561,17 @@ writer.println("#pushing regs");
 
 	@Override
 	public Register visitArrayAccessExpr(ArrayAccessExpr arrayAccessExpr) {
-		writer.println("#inside visit array access expr");
 		Register arrayPosition = arrayAccessExpr.expr2.accept(this);
-		writer.println("#just finished right hand side of array access");
-		Register myvarxpr = arrayAccessExpr.expr1.accept(this);
-		writer.println("#just finished doing lhs of array access");
-		if(arrayAccessExpr.expr1.type instanceof PointerType) {
-			writer.println("lw "+myvarxpr+", ("+myvarxpr+")");
-		}
-		writer.println("mul "+arrayPosition+", "+arrayPosition+", 4");
-		writer.println("sub "+myvarxpr+", "+myvarxpr+", "+arrayPosition);
+		if(arrayAccessExpr.expr2 instanceof VarExpr || arrayAccessExpr.expr2 instanceof ArrayAccessExpr || arrayAccessExpr.expr2 instanceof FieldAccessExpr){
+			writer.println("lw "+arrayPosition+", ("+arrayPosition+")");//if it's a variable expression it will be an address
+		}//this key line and subtracting instead of adding fixed binary search!!
+		Register arrayFPaddressReg = arrayAccessExpr.expr1.accept(this);
+		writer.println("mul "+arrayPosition+", "+arrayPosition+", 4");//do the calculation then the frame pointer bit
+		writer.println("sub "+arrayFPaddressReg+", "+arrayFPaddressReg+", "+arrayPosition);//this is the number to be subtracted from fp
 		freeRegister(arrayPosition);
 		Register result = getRegister ();
-		writer.println("la "+result+", ("+myvarxpr+")");
-		freeRegister(myvarxpr);
+		writer.println("la "+result+", ("+arrayFPaddressReg+")");
+		freeRegister(arrayFPaddressReg);
 		return result;
 	}
 
@@ -667,7 +664,9 @@ writer.println("#pushing regs");
 			freeRegister(lhs);
 			return null;
 		}
+		writer.println("#about to do rhs in assign");
 		Register rhs = assign.expr2.accept(this);
+		writer.println("#about to do lhs in assign");
 		Register lhs = assign.expr1.accept(this);
 		if (assign.expr2 instanceof VarExpr) {
 			writer.println("lw "+rhs+", ("+rhs+")");
@@ -684,10 +683,7 @@ writer.println("#pushing regs");
 			return null;
 		}
 		if (assign.expr2 instanceof TypeCastExpr) {
-			//TypeCastExpr mytypecast = (TypeCastExpr) assign.expr2;
-			//rhs = mytypecast.expr.accept(this);
-			//writer.println("la "+rhs+", ("+rhs+")");
-			//writer.println("lw "+rhs+", ("+rhs+")");
+			writer.println("lw "+rhs+", ("+rhs+")");
 			writer.println("sw "+rhs+", ("+lhs+")");
 			freeRegister(rhs);
 			freeRegister(lhs);

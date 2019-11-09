@@ -32,7 +32,7 @@ int main(){
     int n;
     int x;
     int result;
-    x = 10; //what we're looking for
+    x = 4; //what we're looking for
     n = 5 / 1;
     result = binarySearch(0, n - 1, x);
     print_i(result);
