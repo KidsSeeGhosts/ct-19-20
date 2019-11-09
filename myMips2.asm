@@ -12,6 +12,29 @@ addi $sp,$sp,-4
 addi $sp,$sp,-4
 addi $sp,$sp,-4
 addi $sp,$sp,-4
+la $t8 'y'
+li $v0, 11
+move $a0, $t8
+syscall
+la $t8, -4($fp)
+lw $t8, ($t8)
+li $v0, 1
+move $a0, $t8
+syscall
+la $t8 'x'
+li $v0, 11
+move $a0, $t8
+syscall
+la $t8, -8($fp)
+lw $t8, ($t8)
+li $v0, 1
+move $a0, $t8
+syscall
+la $t8, -12($fp)
+lw $t8, ($t8)
+li $v0, 1
+move $a0, $t8
+syscall
 MyWhile1:
 la $s7, -4($fp)
 #just accepted lhs of bin op
@@ -47,10 +70,14 @@ mflo $s7
 add $t8, $s6, $s7
 la $s7, -16($fp)
 sw $t8, ($s7)
+#inside visit array access expr
 la $t8, -16($fp)
+#just finished right hand side of array access
 la $s6, 0($fp)
+#just finished doing lhs of array access
+lw $s6, ($s6)
 mul $t8, $t8, 4
-add $s6, $s6, $t8
+sub $s6, $s6, $t8
 la $t8, ($s6)
 #just accepted lhs of bin op
 lw $t8, ($t8)
@@ -64,17 +91,21 @@ EqualTo5:
 li $s7, 1
 AfterEqualTo5:
 beq $s7, 0, AfterIf1
-la $s7, -16($fp)
-lw $s7, ($s7)
-move $t9, $s7
-j binarySearchEnd
+la $s7 'y'
+li $v0, 11
+move $a0, $s7
+syscall
 j AfterIfElse1
 AfterIf1:
 AfterIfElse1:
+#inside visit array access expr
 la $s6, -16($fp)
+#just finished right hand side of array access
 la $t8, 0($fp)
+#just finished doing lhs of array access
+lw $t8, ($t8)
 mul $s6, $s6, 4
-add $t8, $t8, $s6
+sub $t8, $t8, $s6
 la $s6, ($t8)
 #just accepted lhs of bin op
 lw $s6, ($s6)
@@ -122,38 +153,53 @@ addi $sp,$sp,-4
 addi $sp,$sp,-4
 addi $sp,$sp,-4
 li $t8 2
+#inside visit array access expr
 li $s7 0
+#just finished right hand side of array access
 la $s6, 0($fp)
+#just finished doing lhs of array access
 mul $s7, $s7, 4
-add $s6, $s6, $s7
+sub $s6, $s6, $s7
 la $s7, ($s6)
 sw $t8, ($s7)
 li $s7 3
+#inside visit array access expr
 li $t8 1
+#just finished right hand side of array access
 la $s6, 0($fp)
+#just finished doing lhs of array access
 mul $t8, $t8, 4
-add $s6, $s6, $t8
+sub $s6, $s6, $t8
 la $t8, ($s6)
 sw $s7, ($t8)
 li $t8 4
+#inside visit array access expr
 li $s7 2
+#just finished right hand side of array access
 la $s6, 0($fp)
+#just finished doing lhs of array access
 mul $s7, $s7, 4
-add $s6, $s6, $s7
+sub $s6, $s6, $s7
 la $s7, ($s6)
 sw $t8, ($s7)
 li $s7 10
+#inside visit array access expr
 li $t8 3
+#just finished right hand side of array access
 la $s6, 0($fp)
+#just finished doing lhs of array access
 mul $t8, $t8, 4
-add $s6, $s6, $t8
+sub $s6, $s6, $t8
 la $t8, ($s6)
 sw $s7, ($t8)
 li $t8 40
+#inside visit array access expr
 li $s7 4
+#just finished right hand side of array access
 la $s6, 0($fp)
+#just finished doing lhs of array access
 mul $s7, $s7, 4
-add $s6, $s6, $s7
+sub $s6, $s6, $s7
 la $s7, ($s6)
 sw $t8, ($s7)
 li $s7 10
@@ -170,6 +216,19 @@ sw $t8, ($s6)
 la $s6, 0($fp)
 la $t8, -32($fp)
 sw $s6, ($t8)
+#inside visit array access expr
+li $t8 1
+#just finished right hand side of array access
+la $s6, -32($fp)
+#just finished doing lhs of array access
+lw $s6, ($s6)
+mul $t8, $t8, 4
+sub $s6, $s6, $t8
+la $t8, ($s6)
+lw $t8, ($t8)
+li $v0, 1
+move $a0, $t8
+syscall
 #pushing regs
 addi $sp,$sp,-4
 sw $fp, ($sp)

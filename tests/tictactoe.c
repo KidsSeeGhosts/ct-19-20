@@ -1,7 +1,12 @@
 #include "../minic-stdlib.h"
 
-int binarySearch(int *arr, int l, int r, int x)
-{
+int binarySearch(int *arr, int l, int r, int x){
+    print_c('y');
+    print_i(l);
+    print_c('x');
+    print_i(r);
+    print_i(x);
+
     while (l <= r)
     {
         int m;
@@ -10,7 +15,7 @@ int binarySearch(int *arr, int l, int r, int x)
         
         // Check if x is present at mid
         if (arr[m] == x)
-            return m;
+            print_c('y');
         
         // If x greater, ignore left half
         if (arr[m] < x)
@@ -42,8 +47,9 @@ int main()
     arr[4] = 40;
     x = 10;
     n = 5 / 1;
-    arrPoint = (int *)arr;
+    arrPoint = (int *) arr;
     
+    print_i(arrPoint[1]);
     result = binarySearch(arrPoint, 0, n - 1, x);
     if (result == -1)
         print_s((char *)"Element is not present in array");

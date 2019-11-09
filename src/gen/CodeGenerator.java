@@ -169,6 +169,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
     public Register visitVarDecl(VarDecl vd) {
+		//System.out.println(vd.type);
 		vd.localOrGlobal="local";
 		if (vd.type instanceof ArrayType) {
 			ArrayType myarray = (ArrayType) vd.type;
@@ -560,10 +561,16 @@ writer.println("#pushing regs");
 
 	@Override
 	public Register visitArrayAccessExpr(ArrayAccessExpr arrayAccessExpr) {
+		writer.println("#inside visit array access expr");
 		Register arrayPosition = arrayAccessExpr.expr2.accept(this);
+		writer.println("#just finished right hand side of array access");
 		Register myvarxpr = arrayAccessExpr.expr1.accept(this);
+		writer.println("#just finished doing lhs of array access");
+		if(arrayAccessExpr.expr1.type instanceof PointerType) {
+			writer.println("lw "+myvarxpr+", ("+myvarxpr+")");
+		}
 		writer.println("mul "+arrayPosition+", "+arrayPosition+", 4");
-		writer.println("add "+myvarxpr+", "+myvarxpr+", "+arrayPosition);
+		writer.println("sub "+myvarxpr+", "+myvarxpr+", "+arrayPosition);
 		freeRegister(arrayPosition);
 		Register result = getRegister ();
 		writer.println("la "+result+", ("+myvarxpr+")");
@@ -676,6 +683,16 @@ writer.println("#pushing regs");
 			freeRegister(lhs);
 			return null;
 		}
+		if (assign.expr2 instanceof TypeCastExpr) {
+			//TypeCastExpr mytypecast = (TypeCastExpr) assign.expr2;
+			//rhs = mytypecast.expr.accept(this);
+			//writer.println("la "+rhs+", ("+rhs+")");
+			//writer.println("lw "+rhs+", ("+rhs+")");
+			writer.println("sw "+rhs+", ("+lhs+")");
+			freeRegister(rhs);
+			freeRegister(lhs);
+			return null;
+		}
 		writer.println("sw "+rhs+", ("+lhs+")");
 		freeRegister(rhs);
 		freeRegister(lhs);
@@ -720,4 +737,6 @@ writer.println("#pushing regs");
 	
 	
 }
+
+
 
