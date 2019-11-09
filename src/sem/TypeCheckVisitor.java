@@ -499,6 +499,14 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		if((assign.expr1 instanceof VarExpr)||(assign.expr1 instanceof FieldAccessExpr)||(assign.expr1 instanceof ArrayAccessExpr)||(assign.expr1 instanceof ValueAtExpr)) {//part 6 of cw2
 			Type lhstype = assign.expr1.accept(this);
 			Type rhstype = assign.expr2.accept(this);
+			if (assign.expr2 instanceof FunCallExpr) {
+				FunCallExpr rhsfuncall =(FunCallExpr) assign.expr2;
+				rhstype = rhsfuncall.type;
+			}
+			if (assign.expr1 instanceof FunCallExpr) {
+				FunCallExpr lhsfuncall =(FunCallExpr) assign.expr1;
+				lhstype = lhsfuncall.type;
+			}
 			if ((!(lhstype instanceof ArrayType))&&(lhstype!=BaseType.VOID)) {
 				if (rhstype==lhstype) {//no error
 					return null;
@@ -515,8 +523,6 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 					}
 				}
 				else {
-//					System.out.println(lhstype);
-//					System.out.println(rhstype);
 					error("in assign lhs and rhs weren't same type");
 					return null;
 				}
