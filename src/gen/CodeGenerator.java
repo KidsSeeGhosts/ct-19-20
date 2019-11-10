@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.EmptyStackException;
+import java.util.HashMap;
 import java.util.Stack;
 
 public class CodeGenerator implements ASTVisitor<Register> {
@@ -44,11 +45,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	private Register resultReg;//this will be t9
 	private int frameOffset =0;
     private int stackoffset = 0;
-    private int gpoffset = 0;
+    //private int gpoffset = 0;
 
 
 
     private PrintWriter writer; // use this writer to output the assembly instructions
+
+	private HashMap<String,StructTypeDecl> mystds = new HashMap<String,StructTypeDecl>();
+	private HashMap<String,VarDecl> structVDs = new HashMap<String,VarDecl>();
 
 
     public void emitProgram(Program program, File outputFile) throws FileNotFoundException {
@@ -122,6 +126,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
     		new DataVisitor(writer,p);//this is where I put all the strings in the data section first
     		writer.println();
 	    	for (StructTypeDecl std : p.structTypeDecls) {
+	    		mystds.put(std.structType.string, std);
+	    		std.localOrGlobal="global";
 	    		std.accept(this);
         }
         for (VarDecl vd : p.varDecls) {//defining global variables
@@ -146,9 +152,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
         			StructType mystructype = (StructType) vd.type;
         			for (StructTypeDecl std : p.structTypeDecls) {
         				if (std.structType.string.equals(mystructype.string)) {
-        					writer.println(vd.varName+": .space "+(-std.structSize));
+        					writer.println(vd.varName+": .space "+(std.structSize));
         				}
                 }
+        		}
+        		if (vd.type instanceof ArrayType) {//forgot about this, maybe this will solve binary search once and for all
+        			ArrayType myarraytype = (ArrayType) vd.type;
+        			int arraysize = (myarraytype.i*4);
+        			writer.println(vd.varName+": .space "+arraysize);
         		}
         }
         writer.println("");
@@ -169,8 +180,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
     public Register visitVarDecl(VarDecl vd) {
-		//System.out.println(vd.type);
-		vd.localOrGlobal="local";
+		vd.localOrGlobal="local";//this will only ever see local as global is already dealt with in visitprogram
 		if (vd.type instanceof ArrayType) {
 			ArrayType myarray = (ArrayType) vd.type;
 			vd.frameoffset=frameOffset;
@@ -186,8 +196,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			vd.wordsize = mystruct.std.structSize;
 			frameOffset=frameOffset+(mystruct.std.structSize);
 			stackoffset=stackoffset-(mystruct.std.structSize);
-
 			writer.println("addi $sp,$sp,-"+mystruct.std.structSize);
+			structVDs.put(vd.varName, vd);
 			return null;
 		}
     		vd.frameoffset=frameOffset;//characters, ints are all 4
@@ -202,11 +212,20 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitVarExpr(VarExpr v) {//this should return a register with the variable's location in memory
+    		//System.out.println(v.vd.frameoffset);
     		Register result = getRegister();
     		if (v.type instanceof StructType) {
+
     			StructType mystruct = (StructType) v.type;
-    			writer.println("la "+result+", "+mystruct.string);
-		    	return result;
+    			if (mystds.containsKey(v.name)){//if we're directly accessing the struct
+	    			writer.println("la "+result+", "+mystruct.string);
+	    		    return result;
+    			}
+    			else {//we are dealing with an instance of a struct. it doesn't have
+    				//System.out.println(v.vd.frameoffset);
+    				writer.println("la "+result+", "+mystruct.string);
+	    		    return result;
+    			}
     		}
     		if (v.vd.localOrGlobal.equals("local")) {
 		    	writer.println("la "+result+", "+-v.vd.frameoffset+"($fp)");
@@ -577,19 +596,27 @@ writer.println("#pushing regs");
 
 	@Override
 	public Register visitFieldAccessExpr(FieldAccessExpr fieldAccessExpr) {
-		Register structAddress = getRegister ();
-		structAddress = fieldAccessExpr.expr.accept(this);
-		//Here result will contain address of the struct
-		if (fieldAccessExpr.type instanceof StructType) {
-			StructType mystruct = (StructType) fieldAccessExpr.type;
-			for (VarDecl vd : mystruct.std.varDecls) {
-				if (vd.varName.equals(fieldAccessExpr.string)){//we find the variable inside the struct
-					Register varInStruct = getRegister();
-			    	writer.println("la "+varInStruct+", "+-vd.structOffset+"("+structAddress+")");
-			    	freeRegister(structAddress);
-			    	return varInStruct;
+		VarExpr myvarexpr = (VarExpr) fieldAccessExpr.expr;
+		if (mystds.containsKey(myvarexpr.name)) {//WE'RE DIRECTLY ACCESSING THE STRUCT
+			//System.out.println("yes");
+			fieldAccessExpr.expr.accept(this);
+			Register structAddress = getRegister ();
+			writer.println("#doing expression in field access");
+			structAddress = fieldAccessExpr.expr.accept(this);
+				if (fieldAccessExpr.type instanceof StructType) {
+					StructType mystruct = (StructType) fieldAccessExpr.type;
+					for (VarDecl vd : mystruct.std.varDecls) {
+						if (vd.varName.equals(fieldAccessExpr.string)){//we find the variable inside the struct
+							Register varInStruct = getRegister();
+					    	writer.println("la "+varInStruct+", "+vd.structOffset+"("+structAddress+")");
+					    	freeRegister(structAddress);
+					    	return varInStruct;
+						}
+					}
 				}
-			}
+		}
+		else {//if we're here it means that we are working with an instance of a struct
+			Register structinstance = fieldAccessExpr.expr.accept(this);
 		}
 		return null;
 	}

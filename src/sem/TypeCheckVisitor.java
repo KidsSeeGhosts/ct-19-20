@@ -13,7 +13,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitStructTypeDecl(StructTypeDecl st) {
-		return st.structType.accept(this);
+		return st.structType;//return st.structType.accept(this) used to be this changed sunday 10th november
 		
 	}
 

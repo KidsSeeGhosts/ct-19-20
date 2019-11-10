@@ -237,15 +237,19 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			if (vs instanceof VarSymbol){
 			v.vd = ((VarSymbol) vs).vd;//the variable stores its declaration
 			//System.out.println(v.vd);
+			return null;
+					
 			}
 			if (vs instanceof StructSymbol) {
 				//System.out.println("found struct symbol");
 				VarDecl myvd = new VarDecl(((StructSymbol) vs).std.structType,v.name);
 				v.vd = myvd;
+				return null;
 			}
 			if (vs instanceof ProcSymbol) {
 				VarDecl myvd = new VarDecl(((ProcSymbol) vs).fd.type,v.name);
 				v.vd = myvd;
+				return null;
 			}
 			
 		}

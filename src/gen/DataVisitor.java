@@ -1,6 +1,9 @@
 package gen;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import ast.ASTVisitor;
 import ast.ArrayAccessExpr;
@@ -31,8 +34,10 @@ import ast.VarDecl;
 import ast.VarExpr;
 import ast.While;
 
+
 public class DataVisitor implements ASTVisitor<Register>{
-	
+
+	HashMap<String,StructTypeDecl> mystds = new HashMap<String,StructTypeDecl>();
 	PrintWriter writer;
 	public int noOfStrings=1;
 
@@ -84,6 +89,13 @@ public class DataVisitor implements ASTVisitor<Register>{
 
     @Override
     public Register visitVarDecl(VarDecl vd){
+//    	if (vd.type instanceof StructType) {
+//    		StructType myStructType = (StructType) vd.type;
+//    		if(mystds.containsKey(myStructType.string)) {
+//    			//System.out.println(mystds.get(myStructType.string).structSize);
+//    			myStructType.std=mystds.get(myStructType.string);
+//    		}
+//    	}
         vd.type.accept(this);
         return null;
     }
@@ -130,8 +142,9 @@ public class DataVisitor implements ASTVisitor<Register>{
         			vd.structOffSetWordSize = (myarray.i*4);
         		}
         }
-    		st.structSize=structSpace;
+    		st.structSize=-structSpace;
     		writer.println(st.structType.string+": .space "+(-structSpace));
+    		mystds.put(st.structType.string, st);
         return null;
     }
 
