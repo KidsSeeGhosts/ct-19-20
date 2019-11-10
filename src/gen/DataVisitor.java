@@ -37,7 +37,8 @@ import ast.While;
 
 public class DataVisitor implements ASTVisitor<Register>{
 
-	HashMap<String,StructTypeDecl> mystds = new HashMap<String,StructTypeDecl>();
+	public HashMap<String,StructTypeDecl> mystds = new HashMap<String,StructTypeDecl>();
+	public HashMap<String,Integer> mystructsizes = new HashMap<String,Integer>();
 	PrintWriter writer;
 	public int noOfStrings=1;
 
@@ -145,6 +146,7 @@ public class DataVisitor implements ASTVisitor<Register>{
     		st.structSize=-structSpace;
     		writer.println(st.structType.string+": .space "+(-structSpace));
     		mystds.put(st.structType.string, st);
+    		mystructsizes.put(st.structType.string, -structSpace);
         return null;
     }
 

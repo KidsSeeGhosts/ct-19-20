@@ -170,7 +170,9 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 					StructTypeDecl mystd = new StructTypeDecl(mynewstructtype,thestructsymbol.std.varDecls);
 					mynewstructtype.std = mystd;
 					scope.put(new StructSymbol(mystd));//struct x y, x was found to be a struct and y was not found already declared in that struct
-					scope.put(new VarSymbol(vd));
+					VarSymbol newvarsymbol = new VarSymbol(vd);
+					newvarsymbol.isStruct=true;
+					scope.put(newvarsymbol);
 					return null;
 				}
 				else {
@@ -197,6 +199,9 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 						StructTypeDecl mystd = new StructTypeDecl(mynewstructtype,thestructsymbol.std.varDecls);
 						mynewstructtype.std = mystd;
 						scope.put(new StructSymbol(mystd));//struct x y, x was found to be a struct and y was not found already declared in that struct
+						VarSymbol newvarsymbol = new VarSymbol(vd);
+						newvarsymbol.isStruct=true;
+						scope.put(newvarsymbol);
 						return null;
 					}
 					else {
@@ -230,10 +235,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			//System.out.println(v.name);
 			error("Var has not been declared before");
 		}
-//		else if(vs.isVar==false){ Don't think I need to worry about this until type check analysis
-//			 error("Got a symbol but it's not a variable");
-//		}
-		else {   // everything is fine , record var decl
+		else {
 			if (vs instanceof VarSymbol){
 			v.vd = ((VarSymbol) vs).vd;//the variable stores its declaration
 			//System.out.println(v.vd);
@@ -242,6 +244,8 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			}
 			if (vs instanceof StructSymbol) {
 				//System.out.println("found struct symbol");
+				StructSymbol mystructsymbol = (StructSymbol) vs;
+				//System.out.println(mystructsymbol.std.structType.string);
 				VarDecl myvd = new VarDecl(((StructSymbol) vs).std.structType,v.name);
 				v.vd = myvd;
 				return null;
@@ -338,7 +342,6 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitFieldAccessExpr(FieldAccessExpr fieldAccessExpr) {
-		//System.out.println(fieldAccessExpr.expr instanceof VarExpr);
 		if (fieldAccessExpr.expr instanceof VarExpr) {
 			VarExpr myvarexpr = (VarExpr) fieldAccessExpr.expr;
 			//System.out.println(myvarexpr.name);
@@ -349,22 +352,32 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 				return null;
 			}
 			if (potentialstructsymbol.isStruct) {
-				//System.out.println("it was a struct");
-				StructSymbol mystructsymbol = (StructSymbol) potentialstructsymbol;
-				StructTypeDecl typetosave = new StructTypeDecl(mystructsymbol.std.structType,mystructsymbol.std.varDecls);
-				StructType finalstructtype = new StructType(myvarexpr.name);
-				finalstructtype.std=typetosave;
-				fieldAccessExpr.type=finalstructtype;
-				//System.out.println(mystructsymbol.std.varDecls.contains(VarDecl));
-				for (VarDecl vd : mystructsymbol.std.varDecls) {
-					if (vd.varName.equals(fieldAccessExpr.string)) {
-						//System.out.println("found it!");
-						fieldAccessExpr.expr.accept(this);
-						return null;
+				if (potentialstructsymbol instanceof StructSymbol) {
+					StructSymbol mystructsymbol = (StructSymbol) potentialstructsymbol;
+					StructTypeDecl typetosave = new StructTypeDecl(mystructsymbol.std.structType,mystructsymbol.std.varDecls);
+					StructType finalstructtype = new StructType(myvarexpr.name);
+					finalstructtype.std=typetosave;
+					fieldAccessExpr.type=finalstructtype;
+					//System.out.println(mystructsymbol.std.varDecls.contains(VarDecl));
+					for (VarDecl vd : mystructsymbol.std.varDecls) {
+						if (vd.varName.equals(fieldAccessExpr.string)) {
+							//System.out.println("found it!");
+							fieldAccessExpr.expr.accept(this);
+							return null;
+						}
 					}
+					error("Field Access Expression x.y, y was not defined in the struct x.");
+					fieldAccessExpr.expr.accept(this);
+					return null;
 				}
-				error("Field Access Expression x.y, y was not defined in the struct x.");
-				fieldAccessExpr.expr.accept(this);
+				if (potentialstructsymbol instanceof VarSymbol) {
+					VarSymbol myvarstructsymbol = (VarSymbol) potentialstructsymbol;
+					if (myvarstructsymbol.vd.type instanceof StructType) {
+						StructType mystructtype = (StructType) myvarstructsymbol.vd.type;
+						fieldAccessExpr.expr.accept(this);
+					}
+					return null;
+				}
 				return null;
 			}
 			error("Field access expression x.y, x was not defined as a struct");

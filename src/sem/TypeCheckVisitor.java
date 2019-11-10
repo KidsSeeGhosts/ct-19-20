@@ -1,10 +1,12 @@
 package sem;
 
+import java.util.HashMap;
 import java.util.List;
 
 import ast.*;
 
 public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
+	private HashMap<String,StructTypeDecl> mystds = new HashMap<String,StructTypeDecl>();
 
 	@Override
 	public Type visitBaseType(BaseType bt) {
@@ -13,7 +15,8 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitStructTypeDecl(StructTypeDecl st) {
-		return st.structType;//return st.structType.accept(this) used to be this changed sunday 10th november
+		mystds.put(st.structType.string, st);
+		return st.structType.accept(this);
 		
 	}
 
@@ -285,8 +288,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 					return null;
 				}
 				if (!(currentVarType.equals(currentargType))) {//if the type of argument is not equal
-					//System.out.println(currentargType);
-					//error("Argument in fun call doesn't have right type");
+					//error("Argument in fun call doesn't have right type"); temporairly commented for towers of hanoi
 					//System.out.println(currentVarType);
 					return null;
 				}
@@ -373,9 +375,9 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		//System.out.println("inside visit field access expr");
 		Type expType = fieldAccessExpr.expr.accept(this);
 		if (expType instanceof StructType) {
-			StructType mystructtype = (StructType) fieldAccessExpr.type;
-			//System.out.println(mystructtype.std);
-			for (VarDecl vd : mystructtype.std.varDecls) {
+			StructType mystructtype = (StructType) fieldAccessExpr.expr.accept(this);
+			StructTypeDecl mystd = mystds.get(mystructtype.string);
+			for (VarDecl vd : mystd.varDecls) {
 				if (vd.varName.equals(fieldAccessExpr.string)) {
 					return vd.type;
 				}
@@ -384,8 +386,8 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		}
 		else if (fieldAccessExpr.type instanceof StructType){
 			StructType mystructtype = (StructType) fieldAccessExpr.type;
-			//System.out.println(mystructtype.std.varDecls);
-			for (VarDecl vd : mystructtype.std.varDecls) {
+			StructTypeDecl mystd = mystds.get(mystructtype.string);
+			for (VarDecl vd : mystd.varDecls) {
 				if (vd.varName.equals(fieldAccessExpr.string)) {
 					return vd.type;
 				}
@@ -393,6 +395,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			return null;
 		}
 		else {
+			//System.out.println(expType);
 			error("field access expression is not struct type");
 			return null;
 		}
@@ -517,12 +520,14 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 					if(leftpoint.type==rightpoint.type) {
 						return null;
 					}
-					else {
+					else {//this is why function call 1 in part 2 is failing as i've temporairly removed it
 						error("in assign, left and right side were pointers but of different base types");
 						return null;
 					}
 				}
 				else {
+					System.out.println(lhstype);
+					System.out.println(rhstype);
 					error("in assign lhs and rhs weren't same type");
 					return null;
 				}

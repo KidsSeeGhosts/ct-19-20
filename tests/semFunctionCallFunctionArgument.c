@@ -5,8 +5,6 @@ int adder(int x){
 
 void main(){
     int c;
-    c = adder(5+adder(5));
+    c = adder(adder(5));
     print_i(c);
 }
-
-
