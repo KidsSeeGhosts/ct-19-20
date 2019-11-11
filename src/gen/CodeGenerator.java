@@ -160,7 +160,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
         		if (vd.type instanceof ArrayType) {//forgot about this, maybe this will solve binary search once and for all
         			ArrayType myarraytype = (ArrayType) vd.type;
         			int arraysize = (myarraytype.i*4);
-        			writer.println(vd.varName+": .space "+arraysize);
+        			if (myarraytype.type.equals(BaseType.INT)){
+        				writer.println(vd.varName+": .align 8 ");
+	        			writer.println("	.space "+arraysize);
+        			}
+        			else {
+	        			writer.println(vd.varName+": .space "+arraysize);
+        			}
         		}
         }
         writer.println("");
