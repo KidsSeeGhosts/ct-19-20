@@ -160,13 +160,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         		if (vd.type instanceof ArrayType) {//forgot about this, maybe this will solve binary search once and for all
         			ArrayType myarraytype = (ArrayType) vd.type;
         			int arraysize = (myarraytype.i*4);
-        			if (myarraytype.type.equals(BaseType.INT)){
-        				writer.println(vd.varName+": .align 8 ");
-	        			writer.println("	.space "+arraysize);
-        			}
-        			else {
-	        			writer.println(vd.varName+": .space "+arraysize);
-        			}
+        			writer.println(vd.varName+": .space "+arraysize);
         		}
         }
         writer.println("");
@@ -453,12 +447,17 @@ writer.println("#pushing regs");
 						
 					}
 					else {
-						
 					
 						if(e instanceof VarExpr || e instanceof ArrayAccessExpr || e instanceof FieldAccessExpr){
-							writer.println("lw "+exp+", ("+exp+")");//if it's a variable expression it will be an address
+							if (!(e.type instanceof PointerType)) {
+								writer.println("lw "+exp+", ("+exp+")");//if it's a variable expression it will be an address
+							}
 						}
 						if (e.type instanceof BaseType || e.type instanceof PointerType || e instanceof BinOp) {
+//							if (e.type instanceof PointerType) {
+//								PointerType mypt = (PointerType) e.type;
+//								System.out.println(mypt.type);
+//							}
 							pushToStack(exp,4);
 							freeRegister(exp);
 							argsoffset=argsoffset+4;
@@ -666,7 +665,68 @@ writer.println("#pushing regs");
 
 	@Override
 	public Register visitSizeOfExpr(SizeOfExpr sizeOfExpr) {
-		return null;
+		Register result = getRegister();
+		if (sizeOfExpr.type instanceof PointerType) {
+			writer.println("li "+result+", 4");
+			return result;
+		}
+		if (sizeOfExpr.type.equals(BaseType.INT)) {
+			writer.println("li "+result+", "+4);
+			return result;
+		}
+		if (sizeOfExpr.type.equals(BaseType.CHAR)) {
+			writer.println("li "+result+", "+4);
+			return result;
+		}
+		if (sizeOfExpr.type.equals(BaseType.VOID)) {
+			writer.println("li "+result+", "+1);
+			return result;
+		}
+		if (sizeOfExpr.type instanceof StructType) {
+			StructType myst = (StructType) sizeOfExpr.type;
+			StructTypeDecl mystd = mystds.get(myst.string);
+			writer.println("li "+result+", "+mystd.structSize);
+			return result;
+		}
+//		if (sizeOfExpr.type instanceof StructType) {
+//			StructType myst = (StructType) sizeOfExpr.type;
+//			StructTypeDecl mystd = mystds.get(myst.string);
+//			int size = 0;
+//			for (VarDecl vd : mystd.varDecls) {
+//				if (vd.type.equals(BaseType.CHAR)){
+//					size=size+4;
+//				}
+//				if (vd.type.equals(BaseType.INT)){
+//					size=size+4;
+//				}
+//				if (vd.type.equals(BaseType.VOID)){
+//					size=size+1;
+//				}
+//				if (vd.type instanceof PointerType) {
+//					size=size+4;
+//				}
+//				if (vd.type instanceof ArrayType) {
+//					ArrayType myarraytype = (ArrayType) vd.type;
+//					if (myarraytype.type.equals(BaseType.CHAR)){
+//						size=size+(4*myarraytype.i);
+//					}
+//					if (myarraytype.type.equals(BaseType.INT)){
+//						size=size+(4*myarraytype.i);
+//					}
+//					if (myarraytype.type.equals(BaseType.VOID)){
+//						size=size+(1*myarraytype.i);
+//					}
+//					if (myarraytype.type instanceof PointerType) {
+//						size=size+(4*myarraytype.i);
+//					}
+//					
+//				}
+//				
+//			}
+//			writer.println("li "+result+", "+size);
+//			return result;
+//		}
+		return result;
 	}
 
 	@Override
@@ -741,13 +801,14 @@ writer.println("#pushing regs");
 			return null;
 		}
 		if (assign.expr2 instanceof ArrayAccessExpr) {
-			writer.println("lw "+rhs+", ("+rhs+")");
+			//writer.println("lw "+rhs+", ("+rhs+")");
 			writer.println("sw "+rhs+", ("+lhs+")");
 			freeRegister(rhs);
 			freeRegister(lhs);
 			return null;
 		}
 		if (assign.expr2 instanceof TypeCastExpr) {
+			writer.println("#assign of type cast expr");
 			writer.println("lw "+rhs+", ("+rhs+")");
 			writer.println("sw "+rhs+", ("+lhs+")");
 			freeRegister(rhs);
