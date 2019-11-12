@@ -183,7 +183,7 @@ public class DataVisitor implements ASTVisitor<Register>{
 	@Override
 	public Register visitStrLiteral(StrLiteral strLiteral) {
 		writer.println("stringLabel"+noOfStrings+": .asciiz \""+strLiteral.string+"\"");
-		writer.println(".align 8");
+		writer.println(".align 2");
 		strLiteral.label=("stringLabel"+noOfStrings);
 		noOfStrings++;
 		return null;

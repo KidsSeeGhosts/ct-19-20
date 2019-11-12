@@ -611,9 +611,16 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		}//this key line and subtracting instead of adding fixed binary search!!
 		Register arrayFPaddressReg = arrayAccessExpr.expr1.accept(this);
 		writer.println("mul "+arrayPosition+", "+arrayPosition+", 4");//do the calculation then the frame pointer bit
-		//VarExpr myvarexpr = (VarExpr) arrayAccessExpr.expr1;
+		VarExpr myvarexpr = (VarExpr) arrayAccessExpr.expr1;
 		//System.out.println(myvarexpr.vd.localOrGlobal);
-		writer.println("sub "+arrayFPaddressReg+", "+arrayFPaddressReg+", "+arrayPosition);//this is the number to be subtracted from fp
+		if (myvarexpr.vd.localOrGlobal.equals("global")) {//data goes up in mips!
+			writer.println("add "+arrayFPaddressReg+", "+arrayFPaddressReg+", "+arrayPosition);//this is the number to be subtracted from fp
+			
+		}
+		else {
+			writer.println("sub "+arrayFPaddressReg+", "+arrayFPaddressReg+", "+arrayPosition);//this is the number to be subtracted from fp
+			
+		}
 		freeRegister(arrayPosition);
 		Register result = getRegister ();
 		writer.println("la "+result+", ("+arrayFPaddressReg+")");
@@ -649,7 +656,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
 					if (vd.varName.equals(fieldAccessExpr.string)){
 						int varoffset = (vd.structOffset);
 						Register result=getRegister();
-						writer.println("sub "+varexpr+", "+varexpr+", "+varoffset);
+						if (myvarexpr.vd.localOrGlobal.equals("global")) {//data goes up in mips!
+							writer.println("add "+varexpr+", "+varexpr+", "+varoffset);
+						}
+						else {
+
+							writer.println("sub "+varexpr+", "+varexpr+", "+varoffset);
+						}
 						writer.println("la "+result+", ("+varexpr+")");
 						freeRegister(varexpr);
 						return result;
