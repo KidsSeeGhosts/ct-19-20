@@ -1,339 +1,268 @@
 .data
-stringLabel1: .asciiz " note qweufigqweif bqiuyfbr39yfv713 gbf9 yu2erhjbvuerh bv9euh"
-.align 2
-stringLabel2: .asciiz ": eoriubvoerubv2ourb vu23bfov23rbfvou23ribfoi2erj vb2eruvb23r9yuvbu2ribu  "
-.align 2
+hello: .space 20
 
-notes: .space 36
+a: .space 20
 
 .text
 
 j main
-	countCash:
+	binarySearch:
 move $fp $sp
 addi $sp,$sp,-4
-addi $sp,$sp,-36
+addi $sp,$sp,-4
 addi $sp,$sp,-4
 #about to do rhs in assign
-li $t8 0
+li $t8 2
 #about to do lhs in assign
-la $s7, -40($fp)
+li $s7 0
+la $s6, a
+#just got register for global var expr address
+add $s6, $s6, 0
+la $s5, ($s6)
+mul $s7, $s7, 4
+add $s5, $s5, $s7
+la $s7, ($s5)
+sw $t8, ($s7)
+#about to do rhs in assign
+li $s7 3
+#about to do lhs in assign
+li $t8 1
+la $s5, a
+#just got register for global var expr address
+add $s5, $s5, 0
+la $s6, ($s5)
+mul $t8, $t8, 4
+add $s6, $s6, $t8
+la $t8, ($s6)
+sw $s7, ($t8)
+#about to do rhs in assign
+li $t8 4
+#about to do lhs in assign
+li $s7 2
+la $s6, a
+#just got register for global var expr address
+add $s6, $s6, 0
+la $s5, ($s6)
+mul $s7, $s7, 4
+add $s5, $s5, $s7
+la $s7, ($s5)
+sw $t8, ($s7)
+#about to do rhs in assign
+li $s7 10
+#about to do lhs in assign
+li $t8 3
+la $s5, a
+#just got register for global var expr address
+add $s5, $s5, 0
+la $s6, ($s5)
+mul $t8, $t8, 4
+add $s6, $s6, $t8
+la $t8, ($s6)
+sw $s7, ($t8)
+#about to do rhs in assign
+li $t8 40
+#about to do lhs in assign
+li $s7 4
+la $s6, a
+#just got register for global var expr address
+add $s6, $s6, 0
+la $s5, ($s6)
+mul $s7, $s7, 4
+add $s5, $s5, $s7
+la $s7, ($s5)
 sw $t8, ($s7)
 MyWhile1:
-la $t8, -40($fp)
+la $t8, 0($fp)
 #just accepted lhs of bin op
 lw $t8, ($t8)
-li $s6 9
+la $s5, -4($fp)
 #just accepted rhs of bin op
-slt $s7, $t8, $s6
+lw $s5, ($s5)
+slt $s7, $t8, $s5
+beq $s7, 1, LessThanOrEqualTo1
+beq $t8, $s5, LessThanOrEqualTo1
+j AfterLessThanOrEqualTo1
+LessThanOrEqualTo1: 
+li $s7, 1
+AfterLessThanOrEqualTo1: 
 beq $s7, 0, AfterWhile1
 MyWhileStatement1:
-la $s6, -40($fp)
-lw $s6, ($s6)
-la $t8, notes
-#just got register for global var expr address
-mul $s6, $s6, 4
-add $t8, $t8, $s6
-la $s6, ($t8)
-#just accepted lhs of bin op
-lw $s6, ($s6)
-la $t8, 0($fp)
-#just accepted rhs of bin op
-lw $t8, ($t8)
-slt $s7, $s6, $t8
-beq $s7, 1, LessThanOrEqualTo2
-beq $s6, $t8, LessThanOrEqualTo2
-j AfterLessThanOrEqualTo2
-LessThanOrEqualTo2: 
-li $s7, 1
-AfterLessThanOrEqualTo2: 
-beq $s7, 0, AfterIf1
+addi $sp,$sp,-4
 #about to do rhs in assign
-la $t8, 0($fp)
+la $s5, 0($fp)
 #just accepted lhs of bin op
-lw $t8, ($t8)
-la $s6, -40($fp)
-lw $s6, ($s6)
-la $s5, notes
-#just got register for global var expr address
-mul $s6, $s6, 4
-add $s5, $s5, $s6
-la $s6, ($s5)
-#just accepted rhs of bin op
-lw $s6, ($s6)
-div $t8, $s6
-mflo $s7
-#about to do lhs in assign
-la $s6, -40($fp)
-lw $s6, ($s6)
-la $t8, -4($fp)
-mul $s6, $s6, 4
-sub $t8, $t8, $s6
-la $s6, ($t8)
-sw $s7, ($s6)
-#about to do rhs in assign
-la $s7, 0($fp)
-#just accepted lhs of bin op
-lw $s7, ($s7)
-la $s5, -40($fp)
 lw $s5, ($s5)
 la $s4, -4($fp)
-mul $s5, $s5, 4
-sub $s4, $s4, $s5
-la $s5, ($s4)
 #just accepted lhs of bin op
-lw $s5, ($s5)
-la $s4, -40($fp)
 lw $s4, ($s4)
-la $s3, notes
-#just got register for global var expr address
-mul $s4, $s4, 4
-add $s3, $s3, $s4
-la $s4, ($s3)
+la $s3, 0($fp)
 #just accepted rhs of bin op
-lw $s4, ($s4)
-mul $t8, $s5, $s4
+lw $s3, ($s3)
+sub $s6, $s4, $s3
+#just accepted lhs of bin op
+li $s3 2
 #just accepted rhs of bin op
-sub $s6, $s7, $t8
+div $s6, $s3
+mflo $t8
+#just accepted rhs of bin op
+add $s7, $s5, $t8
 #about to do lhs in assign
-la $t8, 0($fp)
-sw $s6, ($t8)
+la $t8, -12($fp)
+sw $s7, ($t8)
+la $s7, -12($fp)
+lw $s7, ($s7)
+la $s5, a
+#just got register for global var expr address
+add $s5, $s5, 0
+la $s3, ($s5)
+mul $s7, $s7, 4
+add $s3, $s3, $s7
+la $s7, ($s3)
+#just accepted lhs of bin op
+lw $s7, ($s7)
+la $s3, -8($fp)
+#just accepted rhs of bin op
+lw $s3, ($s3)
+beq $s7, $s3, EqualTo5
+li $t8, 0
+j AfterEqualTo5
+EqualTo5: 
+li $t8, 1
+AfterEqualTo5:
+beq $t8, 0, AfterIf1
+la $t8, -12($fp)
+lw $t8, ($t8)
+move $t9, $t8
+j binarySearchEnd
 j AfterIfElse1
 AfterIf1:
-#about to do rhs in assign
-li $t8 0
-#about to do lhs in assign
-la $s6, -40($fp)
-lw $s6, ($s6)
-la $s7, -4($fp)
-mul $s6, $s6, 4
-sub $s7, $s7, $s6
-la $s6, ($s7)
-sw $t8, ($s6)
-j AfterIfElse1
 AfterIfElse1:
-#about to do rhs in assign
-la $t8, -40($fp)
-#just accepted lhs of bin op
-lw $t8, ($t8)
-li $s7 1
-#just accepted rhs of bin op
-add $s6, $t8, $s7
-#about to do lhs in assign
-la $s7, -40($fp)
-sw $s6, ($s7)
-la $s6, -40($fp)
-#just accepted lhs of bin op
-lw $s6, ($s6)
-li $t8 9
-#just accepted rhs of bin op
-slt $s7, $s6, $t8
-bne $s7, 0, MyWhileStatement1
-AfterWhile1: 
-#about to do rhs in assign
-li $s7 0
-#about to do lhs in assign
-la $t8, -40($fp)
-sw $s7, ($t8)
-MyWhile2:
-la $s7, -40($fp)
-#just accepted lhs of bin op
-lw $s7, ($s7)
-li $s6 9
-#just accepted rhs of bin op
-slt $t8, $s7, $s6
-beq $t8, 0, AfterWhile2
-MyWhileStatement2:
-la $s6, -40($fp)
-lw $s6, ($s6)
-la $s7, -4($fp)
-mul $s6, $s6, 4
-sub $s7, $s7, $s6
-la $s6, ($s7)
-#just accepted lhs of bin op
-lw $s6, ($s6)
-li $s7 0
-#just accepted rhs of bin op
-bne $s6, $s7, NotEqualTo9
-li $t8, 0
-j AfterNotEqualTo9
-NotEqualTo9: 
-li $t8, 1
-AfterNotEqualTo9:
-beq $t8, 0, AfterIf2
-la $t8, -40($fp)
-lw $t8, ($t8)
-la $s7, notes
+la $s3, -12($fp)
+lw $s3, ($s3)
+la $s7, a
 #just got register for global var expr address
-mul $t8, $t8, 4
-add $s7, $s7, $t8
-la $t8, ($s7)
-lw $t8, ($t8)
-li $v0, 1
-move $a0, $t8
-syscall
-la $t8, stringLabel1
-li $v0, 4
-move $a0, $t8
-syscall
-la $t8, stringLabel2
-li $v0, 4
-move $a0, $t8
-syscall
-la $t8, -40($fp)
-lw $t8, ($t8)
-la $s7, -4($fp)
-mul $t8, $t8, 4
-sub $s7, $s7, $t8
-la $t8, ($s7)
-lw $t8, ($t8)
-li $v0, 1
-move $a0, $t8
-syscall
-la $t8 '\n'
-li $v0, 11
-move $a0, $t8
-syscall
+add $s7, $s7, 0
+la $s5, ($s7)
+mul $s3, $s3, 4
+add $s5, $s5, $s3
+la $s3, ($s5)
+#just accepted lhs of bin op
+lw $s3, ($s3)
+la $s5, -8($fp)
+#just accepted rhs of bin op
+lw $s5, ($s5)
+slt $t8, $s3, $s5
+beq $t8, 0, AfterIf2
+#about to do rhs in assign
+la $s5, -12($fp)
+#just accepted lhs of bin op
+lw $s5, ($s5)
+li $s3 1
+#just accepted rhs of bin op
+add $t8, $s5, $s3
+#about to do lhs in assign
+la $s3, 0($fp)
+sw $t8, ($s3)
 j AfterIfElse2
 AfterIf2:
-AfterIfElse2:
 #about to do rhs in assign
-la $s7, -40($fp)
-#just accepted lhs of bin op
-lw $s7, ($s7)
-li $s6 1
-#just accepted rhs of bin op
-add $t8, $s7, $s6
-#about to do lhs in assign
-la $s6, -40($fp)
-sw $t8, ($s6)
-la $t8, -40($fp)
+la $t8, -12($fp)
 #just accepted lhs of bin op
 lw $t8, ($t8)
-li $s7 9
+li $s5 1
 #just accepted rhs of bin op
-slt $s6, $t8, $s7
-bne $s6, 0, MyWhileStatement2
-AfterWhile2: 
-countCashEnd:
+sub $s3, $t8, $s5
+#about to do lhs in assign
+la $s5, -4($fp)
+sw $s3, ($s5)
+j AfterIfElse2
+AfterIfElse2:
+la $s3, 0($fp)
+#just accepted lhs of bin op
+lw $s3, ($s3)
+la $t8, -4($fp)
+#just accepted rhs of bin op
+lw $t8, ($t8)
+slt $s5, $s3, $t8
+beq $s5, 1, LessThanOrEqualTo9
+beq $s3, $t8, LessThanOrEqualTo9
+j AfterLessThanOrEqualTo9
+LessThanOrEqualTo9: 
+li $s5, 1
+AfterLessThanOrEqualTo9: 
+bne $s5, 0, MyWhileStatement1
+AfterWhile1: 
+li $t8 0
+#just accepted lhs of bin op
+li $s3 1
+#just accepted rhs of bin op
+sub $s5, $t8, $s3
+move $t9, $s5
+j binarySearchEnd
+binarySearchEnd:
 move $sp, $fp
 jr $ra
 	main:
 move $fp $sp
 addi $sp,$sp,-4
+addi $sp,$sp,-4
+addi $sp,$sp,-4
 #about to do rhs in assign
-li $s6 2000
+li $s5 10
 #about to do lhs in assign
-li $s7 0
-la $t8, notes
-#just got register for global var expr address
-mul $s7, $s7, 4
-add $t8, $t8, $s7
-la $s7, ($t8)
-sw $s6, ($s7)
+la $s3, -4($fp)
+sw $s5, ($s3)
 #about to do rhs in assign
-li $s7 500
+li $s5 5
+#just accepted lhs of bin op
+li $t8 1
+#just accepted rhs of bin op
+div $s5, $t8
+mflo $s3
 #about to do lhs in assign
-li $s6 1
-la $t8, notes
-#just got register for global var expr address
-mul $s6, $s6, 4
-add $t8, $t8, $s6
-la $s6, ($t8)
-sw $s7, ($s6)
-#about to do rhs in assign
-li $s6 200
-#about to do lhs in assign
-li $s7 2
-la $t8, notes
-#just got register for global var expr address
-mul $s7, $s7, 4
-add $t8, $t8, $s7
-la $s7, ($t8)
-sw $s6, ($s7)
-#about to do rhs in assign
-li $s7 100
-#about to do lhs in assign
-li $s6 3
-la $t8, notes
-#just got register for global var expr address
-mul $s6, $s6, 4
-add $t8, $t8, $s6
-la $s6, ($t8)
-sw $s7, ($s6)
-#about to do rhs in assign
-li $s6 50
-#about to do lhs in assign
-li $s7 4
-la $t8, notes
-#just got register for global var expr address
-mul $s7, $s7, 4
-add $t8, $t8, $s7
-la $s7, ($t8)
-sw $s6, ($s7)
-#about to do rhs in assign
-li $s7 20
-#about to do lhs in assign
-li $s6 5
-la $t8, notes
-#just got register for global var expr address
-mul $s6, $s6, 4
-add $t8, $t8, $s6
-la $s6, ($t8)
-sw $s7, ($s6)
-#about to do rhs in assign
-li $s6 10
-#about to do lhs in assign
-li $s7 6
-la $t8, notes
-#just got register for global var expr address
-mul $s7, $s7, 4
-add $t8, $t8, $s7
-la $s7, ($t8)
-sw $s6, ($s7)
-#about to do rhs in assign
-li $s7 5
-#about to do lhs in assign
-li $s6 7
-la $t8, notes
-#just got register for global var expr address
-mul $s6, $s6, 4
-add $t8, $t8, $s6
-la $s6, ($t8)
-sw $s7, ($s6)
-#about to do rhs in assign
-li $s6 1
-#about to do lhs in assign
-li $s7 8
-la $t8, notes
-#just got register for global var expr address
-mul $s7, $s7, 4
-add $t8, $t8, $s7
-la $s7, ($t8)
-sw $s6, ($s7)
-#about to do rhs in assign
-li $s7 2341
-#about to do lhs in assign
-la $s6, 0($fp)
-sw $s7, ($s6)
+la $t8, 0($fp)
+sw $s3, ($t8)
 #pushing regs
 addi $sp,$sp,-4
 sw $fp, ($sp)
 addi $sp,$sp,-4
 sw $ra, ($sp)
-#Argument ast.VarExpr@29444d75
-la $s6, 0($fp)
-lw $s6, ($s6)
+#Argument ast.IntLiteral@1517365b
+li $t8 0
 addi $sp,$sp,-4
-sw $s6, ($sp)
-add $sp, $sp, 0
-jal countCash
+sw $t8, ($sp)
+#Argument ast.BinOp@4fccd51b
+la $s3, 0($fp)
+#just accepted lhs of bin op
+lw $s3, ($s3)
+li $s5 1
+#just accepted rhs of bin op
+sub $t8, $s3, $s5
+addi $sp,$sp,-4
+sw $t8, ($sp)
+#Argument ast.VarExpr@44e81672
+la $t8, -4($fp)
+lw $t8, ($t8)
+addi $sp,$sp,-4
+sw $t8, ($sp)
+add $sp, $sp, 8
+jal binarySearch
 add $sp, $sp, 4
 lw $ra ,($sp)
 addiu $sp,$sp,4
 lw $fp ,($sp)
 addiu $sp,$sp,4
 #end of function call expression
+la $t8, -8($fp)
+sw $t9, ($t8)
+la $t8, -8($fp)
+lw $t8, ($t8)
+li $v0, 1
+move $a0, $t8
+syscall
+li $t8 0
+move $t9, $t8
+j mainEnd
 mainEnd:
 move $sp, $fp
 li $v0, 10

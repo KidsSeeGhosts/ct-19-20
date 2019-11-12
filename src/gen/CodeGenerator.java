@@ -611,7 +611,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		}//this key line and subtracting instead of adding fixed binary search!!
 		Register arrayFPaddressReg = arrayAccessExpr.expr1.accept(this);
 		writer.println("mul "+arrayPosition+", "+arrayPosition+", 4");//do the calculation then the frame pointer bit
-		VarExpr myvarexpr = (VarExpr) arrayAccessExpr.expr1;
+		VarExpr myvarexpr;
+		if (arrayAccessExpr.expr1 instanceof FieldAccessExpr) {
+			FieldAccessExpr myfieldaccess = (FieldAccessExpr) arrayAccessExpr.expr1;
+			myvarexpr = (VarExpr) myfieldaccess.expr;
+		}
+		else {
+			myvarexpr = (VarExpr) arrayAccessExpr.expr1;
+		}
 		//System.out.println(myvarexpr.vd.localOrGlobal);
 		if (myvarexpr.vd.localOrGlobal.equals("global")) {//data goes up in mips!
 			writer.println("add "+arrayFPaddressReg+", "+arrayFPaddressReg+", "+arrayPosition);//this is the number to be subtracted from fp
