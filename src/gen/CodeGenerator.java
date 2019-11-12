@@ -285,7 +285,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				return resultReg;
 			}
 			if(funCallExpr.expressions.get(0) instanceof VarExpr || funCallExpr.expressions.get(0) instanceof ArrayAccessExpr || funCallExpr.expressions.get(0) instanceof FieldAccessExpr){
+				if (!(funCallExpr.expressions.get(0).type instanceof PointerType)) {
 				writer.println("lw "+numberRegister+", ("+numberRegister+")");//if it's a variable expression it will be an address
+				}
 			}
 			writer.println("li $v0, 1");
 			writer.println("move $a0, "+numberRegister);
@@ -294,6 +296,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			return null;
 		}
 		if(funCallExpr.string.equals("print_s")) {
+			if(funCallExpr.expressions.get(0).type instanceof PointerType) {
+				PointerType mypt = (PointerType) funCallExpr.expressions.get(0).type;
+				System.out.println(mypt.type);
+			}
+			writer.println("# start of print_s");
 			Register stringRegister = funCallExpr.expressions.get(0).accept(this);
 			if (funCallExpr.expressions.get(0) instanceof FunCallExpr) {
 				writer.println("li $v0, 4");
@@ -305,6 +312,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			if(funCallExpr.expressions.get(0) instanceof VarExpr || funCallExpr.expressions.get(0) instanceof FieldAccessExpr){
 				writer.println("lw "+stringRegister+", ("+stringRegister+")");//if it's a variable expression it will be an address
 			}
+			if (funCallExpr.expressions.get(0).type instanceof PointerType) {
+				PointerType mypt = (PointerType) funCallExpr.expressions.get(0).type;
+				//System.out.println(mypt.type);
+			}
 			if(funCallExpr.expressions.get(0) instanceof TypeCastExpr){
 				TypeCastExpr mytypecast = (TypeCastExpr) funCallExpr.expressions.get(0);
 				if (mytypecast.expr instanceof VarExpr) {
@@ -312,17 +323,20 @@ public class CodeGenerator implements ASTVisitor<Register> {
 					if(myvar.type instanceof ArrayType) {
 						ArrayType myarray = (ArrayType) myvar.type;
 						int arraySize = myarray.i;
-						writer.println("lw "+stringRegister+", ("+stringRegister+")");//used to be lb
-						writer.println("li $v0, 11");
-						writer.println("move $a0, "+stringRegister);
-						writer.println("syscall");
-						for (int i=1;i<arraySize;i++) {
-						writer.println("la "+stringRegister+", "+-(i*4)+"($fp)");
-						writer.println("lw "+stringRegister+", ("+stringRegister+")");//used to be lb
-						writer.println("li $v0, 11");
-						writer.println("move $a0, "+stringRegister);
-						writer.println("syscall");
+						Register printreg = getRegister();
+						for (int i=0;i<arraySize;i++) {
+							if (i==0) {
+								writer.println("sub "+stringRegister+", "+stringRegister+", "+0);
+							}
+							else {
+								writer.println("sub "+stringRegister+", "+stringRegister+", "+4);
+							}
+							writer.println("lw "+printreg+", ("+stringRegister+")");//used to be lb
+							writer.println("li $v0, 11");
+							writer.println("move $a0, "+printreg);
+							writer.println("syscall");
 						}
+						freeRegister(printreg);
 						freeRegister(stringRegister);
 						return null;
 					}
@@ -368,7 +382,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
 				return resultReg;
 			}
 			if(funCallExpr.expressions.get(0) instanceof VarExpr || funCallExpr.expressions.get(0) instanceof ArrayAccessExpr  || funCallExpr.expressions.get(0) instanceof FieldAccessExpr){
+				//if (!(funCallExpr.expressions.get(0).type instanceof PointerType)) {
 				writer.println("lw "+charRegister+", ("+charRegister+")");//if it's a variable expression it will be an address
+				//}
 			}
 			writer.println("li $v0, 11");
 			writer.println("move $a0, "+charRegister);
@@ -682,7 +698,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitValueAtExpr(ValueAtExpr valueAtExpr) {
-		return null;
+		Register visitvalueat = valueAtExpr.expr.accept(this);
+		if(valueAtExpr.expr instanceof VarExpr || valueAtExpr.expr instanceof ArrayAccessExpr || valueAtExpr.expr instanceof FieldAccessExpr){
+			writer.println("lw "+visitvalueat+", ("+visitvalueat+")");//if it's a variable expression it will be an address
+		}
+		return visitvalueat;
 	}
 
 	@Override
@@ -715,7 +735,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	@Override
 	public Register visitTypeCastExpr(TypeCastExpr typeCastExpr) {
-		typeCastExpr.type.accept(this);
+		//typeCastExpr.type.accept(this);
 		Register exprReg = typeCastExpr.expr.accept(this);
 		return exprReg;
 	}
@@ -765,7 +785,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		writer.println("AfterIf"+tmp+":");
 		if (myIf.optStmt!=null){
 			myIf.optStmt.accept(this);
-			writer.println("j AfterIfElse"+tmp);//don't see something wrong with this
+			//writer.println("j AfterIfElse"+tmp);//don't see something wrong with this
 		}
 		writer.println("AfterIfElse"+tmp+":");
 		//freeRegister(expression);
@@ -806,8 +826,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			return null;
 		}
 		if (assign.expr2 instanceof TypeCastExpr) {
+			//TypeCastExpr mytypecastexpr = (TypeCastExpr) assign.expr2;
+			//System.out.println(assign.expr1.type);
 			writer.println("#assign of type cast expr");
-			writer.println("lw "+rhs+", ("+rhs+")");
+			//writer.println("lw "+rhs+", ("+rhs+")");
 			writer.println("sw "+rhs+", ("+lhs+")");
 			freeRegister(rhs);
 			freeRegister(lhs);
