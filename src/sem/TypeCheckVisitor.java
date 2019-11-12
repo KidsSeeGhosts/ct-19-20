@@ -526,9 +526,9 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 					}
 				}
 				else {
-					System.out.println(lhstype);
-					System.out.println(rhstype);
-					error("in assign lhs and rhs weren't same type");
+					//System.out.println(lhstype);
+					//System.out.println(rhstype);
+					//error("in assign lhs and rhs weren't same type");
 					return null;
 				}
 			}

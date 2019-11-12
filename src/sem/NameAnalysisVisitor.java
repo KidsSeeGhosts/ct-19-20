@@ -205,7 +205,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 						return null;
 					}
 					else {
-						//error("In struct x y; x was found but it was not a struct");
+						//error("In struct x y; x was found but it was not a struct"); temporairly removed while testing sizeof with struct stuff
 						return null;
 					}
 				}

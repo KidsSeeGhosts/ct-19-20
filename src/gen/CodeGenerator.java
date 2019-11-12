@@ -401,7 +401,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			return resultReg;
 		}
 		else {
-writer.println("#pushing regs");
+			writer.println("#pushing regs");
 			pushToStack(Register.fp,4);
 			pushToStack(Register.ra,4);
 			Stack<Register> regsUsedInThisFunction = new Stack<Register>();
@@ -611,6 +611,8 @@ writer.println("#pushing regs");
 		}//this key line and subtracting instead of adding fixed binary search!!
 		Register arrayFPaddressReg = arrayAccessExpr.expr1.accept(this);
 		writer.println("mul "+arrayPosition+", "+arrayPosition+", 4");//do the calculation then the frame pointer bit
+		//VarExpr myvarexpr = (VarExpr) arrayAccessExpr.expr1;
+		//System.out.println(myvarexpr.vd.localOrGlobal);
 		writer.println("sub "+arrayFPaddressReg+", "+arrayFPaddressReg+", "+arrayPosition);//this is the number to be subtracted from fp
 		freeRegister(arrayPosition);
 		Register result = getRegister ();
@@ -631,9 +633,9 @@ writer.println("#pushing regs");
 					for (VarDecl vd : mystruct.std.varDecls) {
 						if (vd.varName.equals(fieldAccessExpr.string)){//we find the variable inside the struct
 							Register varInStruct = getRegister();
-					    	writer.println("la "+varInStruct+", "+vd.structOffset+"("+structAddress+")");
-					    	freeRegister(structAddress);
-					    	return varInStruct;
+						    	writer.println("la "+varInStruct+", "+vd.structOffset+"("+structAddress+")");
+						    	freeRegister(structAddress);
+						    	return varInStruct;
 						}
 					}
 				}
@@ -688,44 +690,6 @@ writer.println("#pushing regs");
 			writer.println("li "+result+", "+mystd.structSize);
 			return result;
 		}
-//		if (sizeOfExpr.type instanceof StructType) {
-//			StructType myst = (StructType) sizeOfExpr.type;
-//			StructTypeDecl mystd = mystds.get(myst.string);
-//			int size = 0;
-//			for (VarDecl vd : mystd.varDecls) {
-//				if (vd.type.equals(BaseType.CHAR)){
-//					size=size+4;
-//				}
-//				if (vd.type.equals(BaseType.INT)){
-//					size=size+4;
-//				}
-//				if (vd.type.equals(BaseType.VOID)){
-//					size=size+1;
-//				}
-//				if (vd.type instanceof PointerType) {
-//					size=size+4;
-//				}
-//				if (vd.type instanceof ArrayType) {
-//					ArrayType myarraytype = (ArrayType) vd.type;
-//					if (myarraytype.type.equals(BaseType.CHAR)){
-//						size=size+(4*myarraytype.i);
-//					}
-//					if (myarraytype.type.equals(BaseType.INT)){
-//						size=size+(4*myarraytype.i);
-//					}
-//					if (myarraytype.type.equals(BaseType.VOID)){
-//						size=size+(1*myarraytype.i);
-//					}
-//					if (myarraytype.type instanceof PointerType) {
-//						size=size+(4*myarraytype.i);
-//					}
-//					
-//				}
-//				
-//			}
-//			writer.println("li "+result+", "+size);
-//			return result;
-//		}
 		return result;
 	}
 
@@ -747,9 +711,22 @@ writer.println("#pushing regs");
 		}
 		writer.println("beq "+expression+", "+0+", AfterWhile"+tmp);
 		freeRegister(expression);//this line was the final thing that fixed tic tac toe
+		writer.println("MyWhileStatement"+tmp+":");
+		
 		myWhile.stmt.accept(this);
-		writer.println("j MyWhile"+tmp);
+		
+		
+		
+		Register secondexpr = myWhile.expr.accept(this);
+		if(myWhile.expr instanceof VarExpr || myWhile.expr instanceof ArrayAccessExpr || myWhile.expr instanceof FieldAccessExpr){
+			writer.println("lw "+secondexpr+", ("+secondexpr+")");//if it's a variable expression it will be an address
+		}
+		writer.println("bne "+secondexpr+", "+0+", MyWhileStatement"+tmp);
+	
+//		writer.println("j MyWhile"+tmp);
 		writer.println("AfterWhile"+tmp+": ");
+		//freeRegister(expression);//Moving this line up fixed tic tac toe but made other stuff impossible
+		freeRegister(secondexpr);
 		return null;
 	}
 
@@ -763,12 +740,12 @@ writer.println("#pushing regs");
 		}
 		writer.println("beq "+expression+", 0, "+"AfterIf"+tmp);
 		freeRegister(expression);
-		//System.out.println(myIf.stmt);
 		myIf.stmt.accept(this);
 		writer.println("j AfterIfElse"+tmp);
 		writer.println("AfterIf"+tmp+":");
 		if (myIf.optStmt!=null){
 			myIf.optStmt.accept(this);
+			writer.println("j AfterIfElse"+tmp);//don't see something wrong with this
 		}
 		writer.println("AfterIfElse"+tmp+":");
 		//freeRegister(expression);
@@ -782,6 +759,7 @@ writer.println("#pushing regs");
 			Register lhs = assign.expr1.accept(this);
 			writer.println("sw "+rhs+", ("+lhs+")");
 			if(rhs.equals(resultReg)) {
+				//freeRegister(rhs);
 				freeRegister(lhs);
 				return null;
 			}
@@ -834,14 +812,14 @@ writer.println("#pushing regs");
 				Register optexpr = myReturn.optExpr.accept(this);
 				writer.println("lw "+optexpr+", ("+optexpr+")");
 				writer.println("move $t9, "+optexpr);
-				writer.println("j "+currentFunctionName+"End");
 				freeRegister(optexpr);
+				writer.println("j "+currentFunctionName+"End");
 				return null;
 			}
 			Register optexpr =  myReturn.optExpr.accept(this);
 			writer.println("move $t9, "+optexpr);
-			writer.println("j "+currentFunctionName+"End");
 			freeRegister(optexpr);
+			writer.println("j "+currentFunctionName+"End");
 			return null;
 		}
 		writer.println("j "+currentFunctionName+"End");

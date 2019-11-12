@@ -142,6 +142,14 @@ public class DataVisitor implements ASTVisitor<Register>{
         			structSpace=structSpace-(myarray.i*4);//4 bytes for each item in array
         			vd.structOffSetWordSize = (myarray.i*4);
         		}
+        		if (vd.type instanceof StructType) {
+        			StructType myotherstruct = (StructType) vd.type;
+        			vd.structOffset=structSpace;
+        			StructTypeDecl myotherdecl = mystds.get(myotherstruct.string);
+        			structSpace=structSpace-(myotherdecl.structSize);//4 bytes for each item in array
+        			vd.structOffSetWordSize = (myotherdecl.structSize);
+        		}
+        		
         }
     		st.structSize=-structSpace;
     		writer.println(st.structType.string+": .space "+(-structSpace));
