@@ -11,7 +11,7 @@ int find(int decimal_number)
 int main()
 {
     int decimal_number;
-    decimal_number = 69;
+    decimal_number = 10;
     print_i(find(decimal_number));
     return 0;
 }

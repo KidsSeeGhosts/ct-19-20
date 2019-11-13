@@ -298,7 +298,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		if(funCallExpr.string.equals("print_s")) {
 			if(funCallExpr.expressions.get(0).type instanceof PointerType) {
 				PointerType mypt = (PointerType) funCallExpr.expressions.get(0).type;
-				System.out.println(mypt.type);
+				//System.out.println(mypt.type);
 			}
 			writer.println("# start of print_s");
 			Register stringRegister = funCallExpr.expressions.get(0).accept(this);
@@ -430,37 +430,47 @@ public class CodeGenerator implements ASTVisitor<Register> {
 									freeRegister(r);
 									regsUsedInThisFunction.push(r);
 								}
+								
 							}
 						}
 
 						//System.out.println("end of regs");
 			int argsoffset = 0;
 			if (!funCallExpr.expressions.isEmpty()) {//Before we call a function, put the arguments in the right place in the stack for that function.
+				//System.out.println(funCallExpr.expressions.get(0));
 				for (Expr e : funCallExpr.expressions) {//getting the arguments
-
 					writer.println("#Argument "+e.toString());
 					Register exp = e.accept(this);
-//					System.out.println(e);
-//					System.out.println(e.type);
-
 					if (e instanceof FunCallExpr) {//This allows a function
 						Register myresult = getRegister();
 						writer.println("move "+myresult+", "+exp);
 						freeRegister(exp);
 						//writer.println("lw "+exp+", ("+exp+")");
-						if (e.type instanceof BaseType || e.type instanceof PointerType || e instanceof BinOp) {
+						if (e.type instanceof BaseType || e.type instanceof PointerType) {//used to have binop here
+							
 							pushToStack(myresult,4);
 							freeRegister(myresult);
 							argsoffset=argsoffset+4;
 						}
-						if (e.type instanceof ArrayType) {
+						else if (e.type instanceof ArrayType) {
 							ArrayType myarray = (ArrayType) e.type;
 							pushToStack(myresult,myarray.i*4);
 							freeRegister(myresult);
 							argsoffset=argsoffset+(myarray.i*4);
 						}
-						
-						
+//						if (e.type instanceof StructType) {
+//							StructType mystruct = (StructType) e.type;
+//							StructTypeDecl mystd = (mystds.get(mystruct.string));
+//							pushToStack(myresult,mystd.structSize);
+//							freeRegister(myresult);
+//							argsoffset=argsoffset+(mystd.structSize);
+//						}
+						if(e.type==null) {//this is to compensate for mistakes with if else block return type stuff in part 2
+							//System.out.println("yes in funcall");
+							pushToStack(exp,4);
+							freeRegister(exp);
+							argsoffset=argsoffset+4;
+						}
 					}
 					else {
 					
@@ -469,20 +479,29 @@ public class CodeGenerator implements ASTVisitor<Register> {
 								writer.println("lw "+exp+", ("+exp+")");//if it's a variable expression it will be an address
 							}
 						}
-						if (e.type instanceof BaseType || e.type instanceof PointerType || e instanceof BinOp) {
-//							if (e.type instanceof PointerType) {
-//								PointerType mypt = (PointerType) e.type;
-//								System.out.println(mypt.type);
-//							}
+						if (e.type instanceof BaseType || e.type instanceof PointerType) {//used to have bin op here
 							pushToStack(exp,4);
 							freeRegister(exp);
 							argsoffset=argsoffset+4;
 						}
-						if (e.type instanceof ArrayType) {
+						else if (e.type instanceof ArrayType) {
 							ArrayType myarray = (ArrayType) e.type;
 							pushToStack(exp,myarray.i*4);
 							freeRegister(exp);
 							argsoffset=argsoffset+(myarray.i*4);
+						}
+//						if (e.type instanceof StructType) {
+//						StructType mystruct = (StructType) e.type;
+//						StructTypeDecl mystd = (mystds.get(mystruct.string));
+//						pushToStack(myresult,mystd.structSize);
+//						freeRegister(myresult);
+//						argsoffset=argsoffset+(mystd.structSize);
+//					}
+						if(e.type==null) {//this is to compensate for mistakes with if else block return type stuff in part 2
+							//System.out.println("yes");//I'm acutely aware this will break with structs and arrays
+							pushToStack(exp,4);
+							freeRegister(exp);
+							argsoffset=argsoffset+4;
 						}
 					}
 					
@@ -819,7 +838,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 			return null;
 		}
 		if (assign.expr2 instanceof ArrayAccessExpr) {
-			//writer.println("lw "+rhs+", ("+rhs+")");
+			writer.println("lw "+rhs+", ("+rhs+")");
 			writer.println("sw "+rhs+", ("+lhs+")");
 			freeRegister(rhs);
 			freeRegister(lhs);
@@ -869,7 +888,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	}
 	
 	public void pushToStack(Register r, int i) {
-		writer.println("addi $sp,$sp,-"+i);
+		writer.println("addi $sp,$sp,-"+i +" #hello");
 		writer.println("sw "+r+", ($sp)");
 	}
 	public void popFromStack(Register r) {

@@ -37,6 +37,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	@Override
 	public Type visitFunDecl(FunDecl fd) {//no analysis happening here just visiting as normal. this is because there's no premise in typing rule.
 		Type fundecltype = fd.type.accept(this);
+		
         if (!fd.vardecls.isEmpty()){
 	        	for (VarDecl vd : fd.vardecls) {
 	                vd.accept(this);
@@ -110,7 +111,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		        	
 	        	
 	        	
-	        	
+	     
 	            //fd.block.accept(this);
 	            return null;
         }
@@ -179,7 +180,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
             stmt.accept(this);
         		}
         }
-        
+ //       System.out.println(fd.type);
         
         //fd.block.accept(this);
 		return null;
@@ -288,7 +289,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 					return null;
 				}
 				if (!(currentVarType.equals(currentargType))) {//if the type of argument is not equal
-					//error("Argument in fun call doesn't have right type"); temporairly commented for towers of hanoi
+					//error("Argument in fun call doesn't have right type"); //temporairly commented for towers of hanoi
 					//System.out.println(currentVarType);
 					return null;
 				}
@@ -333,7 +334,8 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 				return null;
 			}
 		}
-		return null;
+		
+		return BaseType.INT;
 	}
 
 	@Override
@@ -528,7 +530,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 				else {
 					//System.out.println(lhstype);
 					//System.out.println(rhstype);
-					//error("in assign lhs and rhs weren't same type");
+					error("in assign lhs and rhs weren't same type");
 					return null;
 				}
 			}
