@@ -1,4 +1,66 @@
-# Description of the course work is likely to be upatded! #
+This is a C to MIPS compiler written in Java that I made for a 3rd year university project. I really enjoyed it as it really helped me understand how code is parsed by the compiler, abstract syntax trees and how a compiler generates assembly code. It was assessed daily on a scoreboard by running the compiler against black box automated tests. I scored 100% on this project and am happy to now have it on my personal GitHub. Below are run instructions to try out the compiler as well as the original coursework description/spec I worked against.
+
+# Run Instructions
+
+
+## Prerequisites
+
+- Java JDK installed (`java` and `javac` available)
+- Optional: Ant (`ant`) if you want to use the original build script
+
+## Build
+
+From the project root, use one of the following:
+
+```bash
+# Option A: use the original build script
+ant build
+
+# Option B: direct javac build (works even if ant is not installed)
+mkdir -p bin
+javac -source 8 -target 8 -d bin $(find src -name '*.java')
+```
+
+## Run
+
+```bash
+java -cp bin Main <mode> <input.c> <output-file>
+```
+
+Modes:
+
+- `-lexer`
+- `-parser`
+- `-ast`
+- `-sem`
+- `-gen`
+
+Note: `Main` always expects 3 arguments. Only `-gen` actually uses `outputFile`; in `-lexer`, `-parser`, `-ast`, and `-sem`, the third argument is still required but ignored (use a placeholder such as `dummy.out`).
+
+## Examples
+
+```bash
+# Lexer
+java -cp bin Main -lexer tests/fibonacci.c dummy.out
+
+# Parser
+java -cp bin Main -parser tests/fibonacci.c dummy.out
+
+# AST print
+java -cp bin Main -ast tests/semHelloWorld.c dummy.out
+
+# Semantic analysis
+java -cp bin Main -sem tests/fibonacci.c dummy.out
+
+# Code generation (MIPS assembly)
+java -cp bin Main -gen tests/fibonacci.c fibonacci.asm
+```
+
+## **The rest of this README is the original task description from the university for this project.**
+
+<br><br><br>
+
+# Description of the course work is likely to be updated! #
 
 Please note that the description of the course work might be updated from time to time to clarify things or fix mistakes.
 
