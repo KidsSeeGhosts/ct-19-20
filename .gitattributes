@@ -1,0 +1,15 @@
+# Keep generated/build artifacts out of language stats
+bin/** linguist-generated
+*.class linguist-generated
+
+# Scoreboard snapshots are external results, not source code
+scoreboard/** linguist-vendored
+
+# IDE/project metadata
+.idea/** linguist-generated
+*.iml linguist-generated
+
+# Binary assets/docs should not dominate language breakdown
+figures/** linguist-vendored
+*.jar linguist-vendored
+*.pdf linguist-documentation
